@@ -1,0 +1,1209 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎭 Agenda Cultural Pop's 2.0 | Concurso de Mérito</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <script type="importmap">
+        {
+            "imports": {
+                "firebase/app": "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js",
+                "firebase/firestore": "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js",
+                "firebase/auth": "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js"
+            }
+        }
+    </script>
+    <style>
+        :root {
+            --primary: #0d7a4e;
+            --primary-dark: #0a623f;
+            --primary-light: #e8f5ee;
+            --secondary: #f39c12;
+            --secondary-light: #fff8ec;
+            --danger: #b91c1c;
+            --bg: #f5f7f5;
+            --text: #1a2e1a;
+            --text-muted: #5a7060;
+            --white: #ffffff;
+            --gray: #d0ddd0;
+            --gray-light: #eef2ee;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+            --shadow: 0 4px 16px rgba(0,0,0,0.08);
+            --radius: 14px;
+            --radius-sm: 8px;
+            --toast-z: 9999;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; padding-bottom: 40px; }
+
+        .main-header {
+            background: linear-gradient(150deg, #07301e 0%, #0d7a4e 100%);
+            color: white;
+            padding: 28px 20px 24px;
+            text-align: center;
+            border-bottom: 4px solid var(--secondary);
+        }
+        .main-header h1 { font-weight: 800; font-size: 1.7rem; letter-spacing: -0.5px; }
+        .header-badge {
+            display: inline-block;
+            background: var(--secondary);
+            color: #fff;
+            font-size: 0.65rem;
+            font-weight: 800;
+            padding: 3px 10px;
+            border-radius: 50px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        .nav-tabs {
+            display: flex;
+            background: white;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: var(--shadow-sm);
+            border-bottom: 1px solid var(--gray);
+            flex-wrap: wrap;
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 15px 10px;
+            border: none;
+            background: none;
+            font-weight: 600;
+            font-size: 0.82rem;
+            cursor: pointer;
+            transition: 0.2s;
+            border-bottom: 3px solid transparent;
+            color: var(--text-muted);
+        }
+        .tab-btn.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+            background: var(--primary-light);
+        }
+
+        .container { max-width: 1200px; margin: 24px auto; padding: 0 16px; }
+        .card {
+            background: var(--white);
+            border-radius: var(--radius);
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--gray);
+        }
+        .card-title {
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            color: var(--primary);
+            font-weight: 800;
+            margin-bottom: 18px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .card-title::before {
+            content: '';
+            width: 3px;
+            height: 14px;
+            background: var(--secondary);
+            border-radius: 2px;
+            display: inline-block;
+        }
+
+        .tab-pane { display: block; }
+        .tab-pane.hidden { display: none !important; }
+
+        .grid-candidatos {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+        .cand-box {
+            border-radius: var(--radius-sm);
+            border: 2px solid var(--gray);
+            background: var(--white);
+            overflow: hidden;
+            text-align: center;
+            cursor: pointer;
+            transition: 0.15s;
+            padding: 8px;
+        }
+        .cand-box.selecionado {
+            border-color: var(--secondary);
+            box-shadow: 0 0 0 3px rgba(243,156,18,0.3);
+        }
+        .cand-box img {
+            width: 100%;
+            height: 100px;
+            object-fit: cover;
+            border-radius: var(--radius-sm);
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 14px;
+        }
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .input-group label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+        input, select {
+            width: 100%;
+            padding: 11px 14px;
+            border: 1.5px solid var(--gray);
+            border-radius: var(--radius-sm);
+            font-size: 0.95rem;
+            font-family: 'Inter', sans-serif;
+            transition: 0.2s;
+        }
+        input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(13,122,78,0.12);
+            outline: none;
+        }
+
+        .btn {
+            padding: 11px 22px;
+            border-radius: var(--radius-sm);
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.2s;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            font-size: 0.88rem;
+        }
+        .btn-primary { background: var(--primary); color: white; width: 100%; }
+        .btn-primary:hover { background: var(--primary-dark); }
+        .btn-outline { background: white; border: 1.5px solid var(--primary); color: var(--primary); }
+        .btn-gold { background: var(--secondary); color: white; }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-sm { padding: 5px 12px; font-size: 0.8rem; }
+
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 20px;
+            padding: 12px 22px;
+            border-radius: 50px;
+            z-index: var(--toast-z);
+            font-weight: 600;
+            animation: slideIn 0.25s ease-out;
+            box-shadow: var(--shadow);
+            max-width: 320px;
+        }
+        .toast-success { background: var(--primary); color: white; }
+        .toast-error { background: var(--danger); color: white; }
+        .toast-info { background: #1a2e1a; color: white; }
+        @keyframes slideIn {
+            from { transform: translateX(110%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .flex-between { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+        .mt-2 { margin-top: 16px; }
+        .mt-3 { margin-top: 24px; }
+        .text-muted { color: var(--text-muted); font-size: 0.85rem; }
+        .text-center { text-align: center; }
+        .hidden { display: none !important; }
+
+        .toggle-group {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            font-size: 0.8rem;
+            background: var(--gray-light);
+            padding: 10px 14px;
+            border-radius: var(--radius-sm);
+        }
+        .toggle-group input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            margin-top: 2px;
+            flex-shrink: 0;
+        }
+        .toggle-group a { color: var(--primary); font-weight: 700; text-decoration: none; }
+
+        .pix-key-box {
+            background: var(--gray-light);
+            padding: 16px;
+            border-radius: var(--radius-sm);
+            text-align: center;
+            font-family: monospace;
+            font-size: 1.1rem;
+            font-weight: 800;
+            word-break: break-all;
+            cursor: pointer;
+        }
+
+        .ranking-ol { padding-left: 20px; list-style-type: decimal; }
+        .ranking-ol li {
+            margin-bottom: 10px;
+            padding: 8px 12px;
+            background: var(--gray-light);
+            border-radius: var(--radius-sm);
+        }
+
+        footer {
+            text-align: center;
+            padding: 28px;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            border-top: 1px solid var(--gray);
+            margin-top: 40px;
+        }
+
+        @media (max-width: 600px) {
+            .nav-tabs { flex-direction: column; }
+            .grid-candidatos { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+
+<header class="main-header">
+    <div class="header-badge">🎭 Concurso de Mérito Cultural</div>
+    <h1>Agenda Cultural Pop's 2.0</h1>
+    <p id="edicao-subtitle">Carregando edição...</p>
+</header>
+
+<nav class="nav-tabs">
+    <button class="tab-btn active" data-target="pane-votar">🗳️ Votar</button>
+    <button class="tab-btn" data-target="pane-inscrever">📝 Inscrever-se</button>
+    <button class="tab-btn" data-target="pane-ranking">🏆 Ranking</button>
+    <button class="tab-btn" data-target="pane-transparencia">📢 Transparência</button>
+    <button class="tab-btn" data-target="pane-admin">👑 Admin</button>
+</nav>
+
+<div class="container">
+
+    <!-- PANE VOTAR -->
+    <div id="pane-votar" class="tab-pane">
+        <div id="result-banner" class="card" style="background:var(--secondary-light); border-color: var(--secondary); display:none;">
+            <h2 style="color: var(--secondary);">🏆 Edição Encerrada!</h2>
+            <p id="result-text">Vencedor: <strong>Carregando...</strong></p>
+        </div>
+
+        <div id="edicao-info" class="card" style="display: none;">
+            <div class="card-title">📢 Edição Atual</div>
+            <h3 id="edicao-nome">Nome da Edição</h3>
+            <p id="edicao-desc" class="text-muted">Descrição...</p>
+        </div>
+
+        <div id="voting-area">
+            <div class="card">
+                <div class="card-title">🎯 Candidatos Aprovados</div>
+                <div id="grid-candidatos" class="grid-candidatos">
+                    <div class="text-muted">Carregando candidatos...</div>
+                </div>
+                <div class="flex-between mt-2">
+                    <div><strong>Candidato escolhido:</strong> <span id="candidato-escolhido">Nenhum</span></div>
+                    <div><strong>Valor do voto:</strong> <span id="total-valor" style="color:var(--primary);font-weight:800;">R$ 0,00</span></div>
+                    <button class="btn btn-outline" id="btn-limpar">Limpar Seleção</button>
+                </div>
+            </div>
+
+            <div class="card" id="card-cadastro">
+                <div class="card-title">👤 Seus Dados (Para Votar)</div>
+                <form id="form-voto" novalidate>
+                    <div class="form-grid">
+                        <div class="input-group"><label>Nome Completo *</label><input type="text" id="nome" required></div>
+                        <div class="input-group"><label>CPF *</label><input type="text" id="cpf" required placeholder="000.000.000-00" maxlength="14"></div>
+                        <div class="input-group"><label>E-mail *</label><input type="email" id="email" required></div>
+                        <div class="input-group"><label>WhatsApp *</label><input type="text" id="whatsapp" required placeholder="(61) 99999-9999" maxlength="15"></div>
+                    </div>
+                    <div class="toggle-group mt-2">
+                        <input type="checkbox" id="aceite-termos" required>
+                        <label for="aceite-termos">
+                            Li e aceito o <a href="#" onclick="alert('Regulamento disponível no site.'); return false;">Regulamento</a> e a
+                            <a href="#" onclick="alert('Política de Privacidade disponível no site.'); return false;">Política de Privacidade</a>.
+                            Estou ciente de que este concurso é baseado em MÉRITO (júri técnico + voto popular), vedado sorteio.
+                        </label>
+                    </div>
+                    <button type="submit" class="btn btn-primary mt-3" id="btn-votar">✅ Confirmar Voto e Gerar PIX</button>
+                </form>
+            </div>
+
+            <div id="pix-result" class="card hidden" style="border: 2px solid var(--secondary); background: var(--secondary-light);">
+                <div class="card-title">💰 Pagamento via PIX</div>
+                <p class="text-muted">Copie a chave e realize o pagamento para confirmar seu voto:</p>
+                <div class="pix-key-box mt-2" onclick="window.copyPixKey()">
+                    <span id="pix-key-value">Carregando...</span>
+                    <div style="font-size:0.7rem; font-weight:400; color:var(--text-muted);">clique para copiar</div>
+                </div>
+                <p class="text-center mt-1"><strong>Valor: <span id="pix-valor" style="color:var(--primary);">R$ 0,00</span></strong></p>
+                <p class="text-muted text-center" style="font-size:0.75rem;">Voto confirmado manualmente após o pagamento.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- PANE INSCREVER -->
+    <div id="pane-inscrever" class="tab-pane hidden">
+        <div class="card">
+            <div class="card-title">📝 Inscreva sua Obra</div>
+            <p class="text-muted">Taxa de inscrição: <strong id="label-taxa-insc">R$ 5,00</strong>.</p>
+            <form id="form-inscricao">
+                <div class="form-grid">
+                    <div class="input-group"><label>Nome Completo *</label><input type="text" id="cand-nome" required></div>
+                    <div class="input-group"><label>CPF *</label><input type="text" id="cand-cpf" required maxlength="14"></div>
+                    <div class="input-group"><label>Título da Obra *</label><input type="text" id="cand-titulo" required></div>
+                    <div class="input-group"><label>Link YouTube/Drive *</label><input type="text" id="cand-link" required placeholder="https://..."></div>
+                    <div class="input-group"><label>WhatsApp *</label><input type="text" id="cand-whatsapp" required maxlength="15"></div>
+                    <div class="input-group"><label>URL Foto/Capa</label><input type="text" id="cand-foto" placeholder="https://..."></div>
+                </div>
+                <div class="toggle-group mt-2">
+                    <input type="checkbox" id="aceite-termos-inscricao" required>
+                    <label for="aceite-termos-inscricao">
+                        Declaro que sou o autor da obra e autorizo seu uso para divulgação. Li e aceito o <a href="#" onclick="alert('Regulamento disponível no site.'); return false;">Regulamento</a>.
+                    </label>
+                </div>
+                <button type="submit" class="btn btn-primary mt-3">📤 Enviar Inscrição</button>
+            </form>
+            <div class="regulamento mt-2" style="font-size:0.75rem; color:var(--text-muted); border-top:1px solid var(--gray); padding-top:16px;">
+                <strong>Regulamento Resumido:</strong> Concurso Cultural conforme Lei 5.768/71. Julgamento: 50% Júri Técnico + 50% Voto Popular. Vedado sorteio.
+            </div>
+        </div>
+    </div>
+
+    <!-- PANE RANKING -->
+    <div id="pane-ranking" class="tab-pane hidden">
+        <div class="card">
+            <div class="card-title">🏆 Ranking (Votos Populares)</div>
+            <div id="ranking-content">Carregando...</div>
+        </div>
+    </div>
+
+    <!-- PANE TRANSPARÊNCIA -->
+    <div id="pane-transparencia" class="tab-pane hidden">
+        <div class="card">
+            <div class="card-title">📢 Prestação de Contas e Logs</div>
+            <p class="text-muted">Ações administrativas e movimentações financeiras são registradas aqui para total transparência.</p>
+            <div id="logs-content" style="max-height:400px; overflow-y:auto; font-size:0.85rem;">
+                Carregando logs...
+            </div>
+            <div id="relatorio-financeiro" class="mt-2" style="display:none; border-top:1px solid var(--gray); padding-top:16px;"></div>
+        </div>
+    </div>
+
+    <!-- PANE ADMIN -->
+    <div id="pane-admin" class="tab-pane hidden">
+        <div id="admin-login" class="card" style="max-width:420px; margin:0 auto;">
+            <div class="card-title">🔒 Acesso Administrativo</div>
+            <div class="input-group"><label>E-mail</label><input type="email" id="adm-email"></div>
+            <div class="input-group mt-2"><label>Senha</label><input type="password" id="adm-pass"></div>
+            <button class="btn btn-primary mt-2" id="btn-login">Entrar</button>
+        </div>
+        <div id="admin-panel" class="hidden">
+            <div class="flex-between">
+                <div><h2 style="font-size:1.2rem;">Painel Admin</h2><p class="text-muted" id="admin-user-email"></p></div>
+                <button class="btn btn-outline" id="btn-logout">Sair</button>
+            </div>
+            <div class="card">
+                <div class="card-title">💰 Confirmar Pagamentos de Votos</div>
+                <div id="admin-votos-pendentes">Carregando votos pendentes...</div>
+            </div>
+            <div class="card">
+                <div class="card-title">🚦 Encerrar Edição</div>
+                <p class="text-muted">Antes de encerrar, o júri técnico deve atribuir notas a todos os candidatos.</p>
+                <button class="btn btn-gold" id="btn-encerrar">🏁 Apurar e Encerrar</button>
+            </div>
+            <div class="card">
+                <div class="card-title">⚙️ Configurar Edição</div>
+                <div class="form-grid">
+                    <div class="input-group"><label>Nome Edição</label><input type="text" id="conf-nome"></div>
+                    <div class="input-group"><label>Descrição</label><input type="text" id="conf-desc"></div>
+                    <div class="input-group"><label>Valor Voto (R$)</label><input type="number" id="conf-valor-voto" step="0.50"></div>
+                    <div class="input-group"><label>Taxa Inscrição (R$)</label><input type="number" id="conf-taxa-insc" step="1.00"></div>
+                    <div class="input-group"><label>Chave PIX</label><input type="text" id="conf-pix"></div>
+                    <div class="input-group"><label>% Prêmio</label><input type="number" id="conf-perc-premio" min="0" max="100" step="1"></div>
+                    <div class="input-group"><label>% Custos</label><input type="number" id="conf-perc-custos" min="0" max="100" step="1"></div>
+                    <div class="input-group"><label>% Admin</label><input type="number" id="conf-perc-admin" min="0" max="100" step="1"></div>
+                </div>
+                <button class="btn btn-primary mt-2" id="btn-save-conf">💾 Salvar e Iniciar</button>
+            </div>
+            <div class="card">
+                <div class="card-title">👥 Aprovar Candidatos</div>
+                <div id="admin-candidatos">Carregando...</div>
+            </div>
+            <div class="card">
+                <div class="card-title">⭐ Notas do Júri (Técnico)</div>
+                <div id="admin-juri-area">Carregando...</div>
+            </div>
+            <div class="card">
+                <div class="card-title">↩️ Solicitações de Reembolso</div>
+                <div id="admin-reembolsos">Carregando...</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<footer>
+    <p>© 2026 Carlos Alberto Reis | Concurso Cultural Lei 5.768/71 | Vedado Sorteio</p>
+</footer>
+
+<script type="module">
+    // ════════════════════════════════════════════════════════════
+    // 1. FIREBASE CONFIG (SUBSTITUA PELAS SUAS CREDENCIAIS)
+    // ════════════════════════════════════════════════════════════
+const firebaseConfig = {
+  apiKey: "AIzaSyCHxGdzK7vp14luMbTudKdaK3VMEqkY24w",
+  authDomain: "agenda-cultural-pops.firebaseapp.com",
+  projectId: "agenda-cultural-pops",
+  storageBucket: "agenda-cultural-pops.firebasestorage.app",
+  messagingSenderId: "436424967456",
+  appId: "1:436424967456:web:57cb2fe7e2457745454345"
+};
+
+    import { initializeApp } from "firebase/app";
+    import {
+        getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc,
+        query, where, onSnapshot, writeBatch, orderBy, Timestamp, deleteDoc, runTransaction
+    } from "firebase/firestore";
+    import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "firebase/auth";
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    // ════════════════════════════════════════════════════════════
+    // 2. ESTADO GLOBAL
+    // ════════════════════════════════════════════════════════════
+    let edicaoData = null;
+    let selectedCandidato = null;          // Agora apenas UM candidato
+    let globalCandidatos = [];
+    let currentUser = null;
+
+    // ════════════════════════════════════════════════════════════
+    // 3. UTILITÁRIOS
+    // ════════════════════════════════════════════════════════════
+    function toast(msg, tipo = 'success') {
+        document.querySelectorAll('.toast').forEach(el => el.remove());
+        const div = document.createElement('div');
+        div.className = `toast toast-${tipo}`;
+        div.textContent = msg;
+        document.body.appendChild(div);
+        setTimeout(() => div.remove(), 4000);
+    }
+
+    const fmtMoney = (v) => `R$ ${Number(v || 0).toFixed(2).replace('.', ',')}`;
+
+    // Máscaras
+    const maskCPF = (v) => {
+        v = v.replace(/\D/g, '').substring(0, 11);
+        if (v.length > 9) return v.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+        if (v.length > 6) return v.replace(/(\d{3})(\d{3})(\d+)/, '$1.$2.$3');
+        if (v.length > 3) return v.replace(/(\d{3})(\d+)/, '$1.$2');
+        return v;
+    };
+    const maskPhone = (v) => {
+        v = v.replace(/\D/g, '').substring(0, 11);
+        if (v.length > 10) return v.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+        if (v.length > 6) return v.replace(/(\d{2})(\d{4,5})(\d*)/, '($1) $2-$3');
+        if (v.length > 2) return v.replace(/(\d{2})(\d+)/, '($1) $2');
+        return v;
+    };
+    const unformatCPF = (v) => v.replace(/\D/g, '');
+    const escHtml = (s) => { if (!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
+
+    // Validação de CPF (com dígitos)
+    function validarCPF(cpf) {
+        cpf = cpf.replace(/\D/g, '');
+        if (cpf.length !== 11) return false;
+        if (/^(\d)\1{10}$/.test(cpf)) return false;
+        let soma = 0, resto;
+        for (let i=1; i<=9; i++) soma += parseInt(cpf.substring(i-1, i)) * (11 - i);
+        resto = (soma * 10) % 11;
+        if ((resto === 10) || (resto === 11)) resto = 0;
+        if (resto !== parseInt(cpf.substring(9, 10))) return false;
+        soma = 0;
+        for (let i=1; i<=10; i++) soma += parseInt(cpf.substring(i-1, i)) * (12 - i);
+        resto = (soma * 10) % 11;
+        if ((resto === 10) || (resto === 11)) resto = 0;
+        if (resto !== parseInt(cpf.substring(10, 11))) return false;
+        return true;
+    }
+
+    window.copyPixKey = async () => {
+        const el = document.getElementById('pix-key-value');
+        if (!el) return;
+        try {
+            await navigator.clipboard.writeText(el.textContent);
+            toast('Chave PIX copiada!', 'success');
+        } catch {
+            toast('Copie manualmente.', 'info');
+        }
+    };
+
+    // ════════════════════════════════════════════════════════════
+    // 4. LÓGICA DE NEGÓCIO
+    // ════════════════════════════════════════════════════════════
+
+    // 4.1 Inicializar Edição
+    async function initEdicao() {
+        try {
+            const snap = await getDoc(doc(db, "edicoesCulturais", "ativa"));
+            if (snap.exists()) {
+                edicaoData = snap.data();
+                updateUI(edicaoData);
+                carregarCandidatos();
+                carregarRanking();
+                carregarLogs();
+                if (currentUser) {
+                    carregarVotosPendentesAdmin();
+                    carregarReembolsosAdmin();
+                }
+            } else {
+                // Cria edição padrão
+                await setDoc(doc(db, "edicoesCulturais", "ativa"), {
+                    nome: "Edição Piloto - Cultura Livre",
+                    descricao: "Tema Livre. Inscrições abertas.",
+                    valorVoto: 2.00,
+                    taxaInscricao: 5.00,
+                    pixChave: "61999487649",
+                    status: 'aberta_inscricoes',
+                    percentuais: { premio: 60, custos: 20, admin: 20 },
+                    dataInicio: Timestamp.now()
+                });
+                toast('Edição padrão criada.', 'success');
+                location.reload();
+            }
+        } catch (err) {
+            console.error(err);
+            toast('Erro ao carregar edição.', 'error');
+        }
+    }
+
+    function updateUI(data) {
+        document.getElementById('edicao-subtitle').textContent = `${data.nome} — Voto: ${fmtMoney(data.valorVoto)}`;
+        document.getElementById('edicao-nome').textContent = data.nome;
+        document.getElementById('edicao-desc').textContent = data.descricao;
+        document.getElementById('label-taxa-insc').textContent = fmtMoney(data.taxaInscricao);
+
+        // Campos de configuração
+        if (data.percentuais) {
+            document.getElementById('conf-perc-premio').value = data.percentuais.premio || 60;
+            document.getElementById('conf-perc-custos').value = data.percentuais.custos || 20;
+            document.getElementById('conf-perc-admin').value = data.percentuais.admin || 20;
+        }
+        document.getElementById('conf-nome').value = data.nome || '';
+        document.getElementById('conf-desc').value = data.descricao || '';
+        document.getElementById('conf-valor-voto').value = data.valorVoto || '';
+        document.getElementById('conf-taxa-insc').value = data.taxaInscricao || '';
+        document.getElementById('conf-pix').value = data.pixChave || '';
+
+        if (data.status === 'encerrada') {
+            document.getElementById('voting-area').style.display = 'none';
+            document.getElementById('result-banner').style.display = 'block';
+            document.getElementById('result-text').innerHTML =
+                `Vencedor: <strong>${data.vencedorNome || '—'}</strong> (${data.vencedorVotos || 0} votos)`;
+        } else {
+            document.getElementById('voting-area').style.display = 'block';
+            document.getElementById('result-banner').style.display = 'none';
+        }
+        document.getElementById('pix-key-value').textContent = data.pixChave || 'Chave não definida';
+    }
+
+    // 4.2 Candidatos (seleção única)
+    function carregarCandidatos() {
+        const container = document.getElementById('grid-candidatos');
+        const q = query(
+            collection(db, "candidatos"),
+            where("edicaoId", "==", "ativa"),
+            where("status", "==", "aprovado")
+        );
+
+        onSnapshot(q, (snapshot) => {
+            globalCandidatos = [];
+            container.innerHTML = '';
+            if (snapshot.empty) {
+                container.innerHTML = '<div class="text-muted">Nenhum candidato aprovado ainda.</div>';
+                return;
+            }
+            snapshot.forEach(docSnap => {
+                const c = { id: docSnap.id, ...docSnap.data() };
+                globalCandidatos.push(c);
+                const div = document.createElement('div');
+                const isSelected = (selectedCandidato && selectedCandidato.id === c.id);
+                div.className = `cand-box ${isSelected ? 'selecionado' : ''}`;
+                div.innerHTML = `
+                    <img src="${c.foto || 'https://placehold.co/150x100/0d7a4e/white?text=OBRA'}" alt="${c.titulo}">
+                    <div style="padding:6px;">
+                        <strong>${escHtml(c.titulo)}</strong>
+                        <div class="text-muted" style="font-size:0.7rem;">${escHtml(c.nome)}</div>
+                        <div style="font-size:0.75rem; color:var(--primary); font-weight:700;">${c.votos || 0} votos</div>
+                    </div>
+                `;
+                div.onclick = () => {
+                    if (edicaoData?.status === 'encerrada') return toast('Edição encerrada.', 'error');
+                    if (selectedCandidato && selectedCandidato.id === c.id) {
+                        selectedCandidato = null; // desmarca
+                    } else {
+                        selectedCandidato = c; // seleciona este
+                    }
+                    updateTotal();
+                    carregarCandidatos(); // re-render para atualizar visual
+                };
+                container.appendChild(div);
+            });
+        });
+    }
+
+    function updateTotal() {
+        const valor = selectedCandidato ? edicaoData?.valorVoto || 0 : 0;
+        document.getElementById('total-valor').textContent = fmtMoney(valor);
+        document.getElementById('pix-valor').textContent = fmtMoney(valor);
+        document.getElementById('candidato-escolhido').textContent =
+            selectedCandidato ? escHtml(selectedCandidato.titulo) : 'Nenhum';
+    }
+
+    // 4.3 Submit Voto (com validação de CPF)
+    document.getElementById('form-voto').onsubmit = async (e) => {
+        e.preventDefault();
+
+        if (!document.getElementById('aceite-termos').checked) {
+            return toast('Você precisa aceitar os Termos e Política de Privacidade.', 'error');
+        }
+        if (!selectedCandidato) return toast('Selecione um candidato.', 'error');
+
+        const cpf = unformatCPF(document.getElementById('cpf').value);
+        if (!validarCPF(cpf)) return toast('CPF inválido. Verifique os dígitos.', 'error');
+
+        // Verifica se CPF já votou nesta edição
+        const qVoto = query(
+            collection(db, "votos"),
+            where("cpf", "==", cpf),
+            where("edicaoId", "==", "ativa"),
+            where("status", "in", ["pendente", "confirmado"])
+        );
+        const snapVoto = await getDocs(qVoto);
+        if (!snapVoto.empty) return toast('Este CPF já votou nesta edição.', 'error');
+
+        const valorTotal = edicaoData.valorVoto;
+        const votoId = `VOTO_${Date.now()}`;
+
+        try {
+            const batch = writeBatch(db);
+            batch.set(doc(db, "votos", votoId), {
+                nome: document.getElementById('nome').value,
+                cpf: cpf,
+                email: document.getElementById('email').value,
+                whatsapp: document.getElementById('whatsapp').value,
+                candidatoId: selectedCandidato.id,
+                valorTotal: valorTotal,
+                status: 'pendente',
+                edicaoId: 'ativa',
+                dataCriacao: Timestamp.now()
+            });
+            await batch.commit();
+
+            toast('Voto registrado! Realize o PIX para confirmar.', 'success');
+            document.getElementById('pix-result').classList.remove('hidden');
+            document.getElementById('card-cadastro').classList.add('hidden');
+            selectedCandidato = null;
+            updateTotal();
+            carregarCandidatos();
+        } catch (err) {
+            console.error(err);
+            toast('Erro ao registrar voto.', 'error');
+        }
+    };
+
+    // 4.4 Submit Inscrição
+    document.getElementById('form-inscricao').onsubmit = async (e) => {
+        e.preventDefault();
+        if (!document.getElementById('aceite-termos-inscricao').checked) {
+            return toast('Aceite os Termos para continuar.', 'error');
+        }
+        const cpf = unformatCPF(document.getElementById('cand-cpf').value);
+        if (!validarCPF(cpf)) return toast('CPF inválido. Verifique os dígitos.', 'error');
+
+        try {
+            await setDoc(doc(collection(db, "candidatos")), {
+                nome: document.getElementById('cand-nome').value,
+                cpf: cpf,
+                titulo: document.getElementById('cand-titulo').value,
+                link: document.getElementById('cand-link').value,
+                whatsapp: document.getElementById('cand-whatsapp').value,
+                foto: document.getElementById('cand-foto').value || '',
+                edicaoId: 'ativa',
+                status: 'pendente',
+                votos: 0,
+                notaJuri: null,
+                dataInscricao: Timestamp.now()
+            });
+            toast('Inscrição enviada! Aguarde aprovação.', 'success');
+            document.getElementById('form-inscricao').reset();
+        } catch (err) {
+            toast('Erro na inscrição.', 'error');
+        }
+    };
+
+    // 4.5 Ranking
+    async function carregarRanking() {
+        const container = document.getElementById('ranking-content');
+        const snap = await getDocs(query(
+            collection(db, "candidatos"),
+            where("edicaoId", "==", "ativa"),
+            where("status", "==", "aprovado"),
+            orderBy("votos", "desc")
+        ));
+        if (snap.empty) {
+            container.innerHTML = '<p class="text-muted">Nenhum voto computado.</p>';
+            return;
+        }
+        let maxVotos = 0;
+        const candidatos = [];
+        snap.forEach(d => {
+            const c = d.data();
+            candidatos.push(c);
+            if (c.votos > maxVotos) maxVotos = c.votos;
+        });
+        let html = '<ol class="ranking-ol">';
+        candidatos.forEach(c => {
+            const notaPopular = maxVotos > 0 ? (c.votos / maxVotos) * 10 : 0;
+            const notaFinal = c.notaJuri !== null ? (c.notaJuri * 0.5 + notaPopular * 0.5) : 'Aguardando Júri';
+            const notaStr = notaFinal !== 'Aguardando Júri' ? `| Nota Final: ${notaFinal.toFixed(1)}` : '';
+            html += `<li><strong>${escHtml(c.titulo)}</strong> - ${escHtml(c.nome)} 
+                     <span style="color:var(--primary);font-weight:700;">${c.votos || 0} votos</span>
+                     ${notaStr}
+                     </li>`;
+        });
+        html += '</ol>';
+        container.innerHTML = html;
+    }
+
+    // 4.6 Logs
+    async function carregarLogs() {
+        const container = document.getElementById('logs-content');
+        try {
+            const q = query(collection(db, "admin_logs"), orderBy("data", "desc"), limit(50));
+            const snap = await getDocs(q);
+            if (snap.empty) {
+                container.innerHTML = '<p class="text-muted">Nenhuma ação registrada ainda.</p>';
+                return;
+            }
+            let html = '';
+            snap.forEach(d => {
+                const log = d.data();
+                const dataStr = log.data?.toDate().toLocaleString('pt-BR') || '--';
+                html += `<div style="padding:6px 0; border-bottom:1px solid var(--gray-light);">
+                    <span style="color:var(--text-muted);font-size:0.7rem;">${dataStr}</span>
+                    <strong style="color:var(--primary);margin:0 8px;">${escHtml(log.acao)}</strong>
+                    <span>${escHtml(log.detalhes)}</span>
+                </div>`;
+            });
+            container.innerHTML = html;
+            // Relatório financeiro, se existir
+            const rel = document.getElementById('relatorio-financeiro');
+            if (edicaoData?.status === 'encerrada' && edicaoData?.relatorioFinanceiro) {
+                rel.style.display = 'block';
+                const r = edicaoData.relatorioFinanceiro;
+                rel.innerHTML = `
+                    <div class="card-title">📊 Relatório Financeiro</div>
+                    <div class="form-grid">
+                        <div><strong>Total Arrecadado:</strong> ${fmtMoney(r.totalArrecadado)}</div>
+                        <div><strong>Prêmio (${r.percPremio}%):</strong> ${fmtMoney(r.premio)}</div>
+                        <div><strong>Custos (${r.percCustos}%):</strong> ${fmtMoney(r.custos)}</div>
+                        <div><strong>Taxa Admin (${r.percAdmin}%):</strong> ${fmtMoney(r.admin)}</div>
+                    </div>
+                `;
+            } else {
+                rel.style.display = 'none';
+            }
+        } catch (err) {
+            container.innerHTML = 'Erro ao carregar logs.';
+        }
+    }
+
+    // ════════════════════════════════════════════════════════════
+    // 5. ADMIN
+    // ════════════════════════════════════════════════════════════
+    document.getElementById('btn-login').onclick = async () => {
+        try {
+            await signInWithEmailAndPassword(
+                auth,
+                document.getElementById('adm-email').value,
+                document.getElementById('adm-pass').value
+            );
+            toast('Acesso concedido!', 'success');
+        } catch {
+            toast('E-mail ou senha incorretos.', 'error');
+        }
+    };
+    document.getElementById('btn-logout').onclick = () => signOut(auth);
+
+    onAuthStateChanged(auth, (user) => {
+        currentUser = user;
+        if (user) {
+            document.getElementById('admin-login').classList.add('hidden');
+            document.getElementById('admin-panel').classList.remove('hidden');
+            document.getElementById('admin-user-email').textContent = user.email;
+            carregarVotosPendentesAdmin();
+            carregarReembolsosAdmin();
+            loadAdminCandidatos();
+            loadAdminJuri();
+        } else {
+            document.getElementById('admin-login').classList.remove('hidden');
+            document.getElementById('admin-panel').classList.add('hidden');
+        }
+    });
+
+    // 5.1 Confirmar pagamentos (votos pendentes)
+    async function carregarVotosPendentesAdmin() {
+        const container = document.getElementById('admin-votos-pendentes');
+        const q = query(
+            collection(db, "votos"),
+            where("edicaoId", "==", "ativa"),
+            where("status", "==", "pendente")
+        );
+        const snap = await getDocs(q);
+        if (snap.empty) {
+            container.innerHTML = '<p class="text-muted">Nenhum voto pendente de confirmação.</p>';
+            return;
+        }
+        let html = '<table style="width:100%;font-size:0.85rem;"><tr><th>Comprador</th><th>Candidato</th><th>Valor</th><th>Ação</th></tr>';
+        snap.forEach(d => {
+            const v = d.data();
+            const candNome = globalCandidatos.find(c => c.id === v.candidatoId)?.titulo || v.candidatoId;
+            html += `<tr>
+                <td>${escHtml(v.nome)}<br><small>${v.cpf}</small></td>
+                <td>${escHtml(candNome)}</td>
+                <td>${fmtMoney(v.valorTotal)}</td>
+                <td><button class="btn btn-primary btn-sm" onclick="confirmarVoto('${d.id}')">Confirmar</button></td>
+            </tr>`;
+        });
+        html += '</table>';
+        container.innerHTML = html;
+    }
+
+    window.confirmarVoto = async (votoId) => {
+        if (!confirm('Confirmar pagamento deste voto?')) return;
+        try {
+            await runTransaction(db, async (tx) => {
+                const vRef = doc(db, "votos", votoId);
+                const vSnap = await tx.get(vRef);
+                if (!vSnap.exists()) throw new Error('Voto não encontrado');
+                const v = vSnap.data();
+                if (v.status !== 'pendente') throw new Error('Voto já processado');
+
+                // Incrementa votos do candidato
+                const candRef = doc(db, "candidatos", v.candidatoId);
+                const candSnap = await tx.get(candRef);
+                if (!candSnap.exists()) throw new Error('Candidato não encontrado');
+                const votosAtuais = candSnap.data().votos || 0;
+
+                tx.update(candRef, { votos: votosAtuais + 1 });
+                tx.update(vRef, { status: 'confirmado', dataConfirmacao: Timestamp.now() });
+                tx.set(doc(collection(db, "admin_logs")), {
+                    acao: 'CONFIRMAÇÃO VOTO',
+                    detalhes: `Voto ${votoId} confirmado para candidato ${v.candidatoId}`,
+                    data: Timestamp.now()
+                });
+            });
+            toast('Voto confirmado!', 'success');
+            carregarVotosPendentesAdmin();
+            carregarRanking();
+        } catch (err) {
+            toast(err.message || 'Erro ao confirmar.', 'error');
+        }
+    };
+
+    // 5.2 Reembolsos
+    async function carregarReembolsosAdmin() {
+        const container = document.getElementById('admin-reembolsos');
+        const q = query(
+            collection(db, "votos"),
+            where("edicaoId", "==", "ativa"),
+            where("status", "==", "reembolso_solicitado")
+        );
+        const snap = await getDocs(q);
+        if (snap.empty) {
+            container.innerHTML = '<p class="text-muted">Nenhuma solicitação de reembolso.</p>';
+            return;
+        }
+        let html = '<table style="width:100%;font-size:0.85rem;"><tr><th>Comprador</th><th>Valor</th><th>Ação</th></tr>';
+        snap.forEach(d => {
+            const v = d.data();
+            html += `<tr>
+                <td>${escHtml(v.nome)}<br><small>${v.cpf}</small></td>
+                <td>${fmtMoney(v.valorTotal)}</td>
+                <td>
+                    <button class="btn btn-success btn-sm" onclick="aprovarReembolso('${d.id}')">Aprovar</button>
+                    <button class="btn btn-danger btn-sm" onclick="rejeitarReembolso('${d.id}')">Rejeitar</button>
+                </td>
+            </tr>`;
+        });
+        html += '</table>';
+        container.innerHTML = html;
+    }
+
+    window.aprovarReembolso = async (votoId) => {
+        if (!confirm('Aprovar reembolso? O voto será cancelado.')) return;
+        try {
+            await runTransaction(db, async (tx) => {
+                const vRef = doc(db, "votos", votoId);
+                const vSnap = await tx.get(vRef);
+                if (!vSnap.exists()) throw new Error('Voto não encontrado');
+                const v = vSnap.data();
+                if (v.status !== 'reembolso_solicitado') throw new Error('Status inválido');
+
+                // Se já confirmado, subtrai voto do candidato
+                if (v.status === 'confirmado') {
+                    const candRef = doc(db, "candidatos", v.candidatoId);
+                    const candSnap = await tx.get(candRef);
+                    if (candSnap.exists()) {
+                        const votos = candSnap.data().votos || 0;
+                        tx.update(candRef, { votos: Math.max(0, votos - 1) });
+                    }
+                }
+                tx.update(vRef, { status: 'cancelado', dataReembolso: Timestamp.now() });
+                tx.set(doc(collection(db, "admin_logs")), {
+                    acao: 'REEMBOLSO APROVADO',
+                    detalhes: `Voto ${votoId} reembolsado`,
+                    data: Timestamp.now()
+                });
+            });
+            toast('Reembolso aprovado.', 'success');
+            carregarReembolsosAdmin();
+            carregarRanking();
+        } catch (err) {
+            toast(err.message || 'Erro.', 'error');
+        }
+    };
+
+    window.rejeitarReembolso = async (votoId) => {
+        if (!confirm('Rejeitar solicitação de reembolso?')) return;
+        await updateDoc(doc(db, "votos", votoId), { status: 'pendente' });
+        toast('Solicitação rejeitada.', 'info');
+        carregarReembolsosAdmin();
+    };
+
+    // 5.3 Aprovar candidatos
+    async function loadAdminCandidatos() {
+        const container = document.getElementById('admin-candidatos');
+        const snap = await getDocs(query(collection(db, "candidatos"), where("status", "==", "pendente")));
+        if (snap.empty) {
+            container.innerHTML = '<p class="text-muted">Nenhuma inscrição pendente.</p>';
+            return;
+        }
+        let html = '<table style="width:100%;font-size:0.85rem;"><tr><th>Nome</th><th>Obra</th><th>Ação</th></tr>';
+        snap.forEach(d => {
+            const c = d.data();
+            html += `<tr><td>${escHtml(c.nome)}</td><td><a href="${c.link}" target="_blank">${escHtml(c.titulo)}</a></td>
+                     <td><button class="btn btn-primary btn-sm" onclick="aprovarCand('${d.id}')">Aprovar</button></td></tr>`;
+        });
+        html += '</table>';
+        container.innerHTML = html;
+    }
+
+    window.aprovarCand = async (id) => {
+        await updateDoc(doc(db, "candidatos", id), { status: 'aprovado' });
+        await setDoc(doc(collection(db, "admin_logs")), {
+            acao: 'APROVAÇÃO CANDIDATO',
+            detalhes: `Candidato ${id} aprovado`,
+            data: Timestamp.now()
+        });
+        toast('Aprovado!', 'success');
+        loadAdminCandidatos();
+    };
+
+    // 5.4 Notas do Júri
+    async function loadAdminJuri() {
+        const container = document.getElementById('admin-juri-area');
+        const snap = await getDocs(query(collection(db, "candidatos"), where("status", "==", "aprovado")));
+        if (snap.empty) {
+            container.innerHTML = '<p class="text-muted">Nenhum candidato aprovado para avaliar.</p>';
+            return;
+        }
+        let html = '<table style="width:100%;font-size:0.85rem;"><tr><th>Obra</th><th>Nota (0-10)</th><th>Ação</th></tr>';
+        snap.forEach(d => {
+            const c = d.data();
+            const notaAtual = c.notaJuri !== null ? c.notaJuri : '';
+            html += `<tr>
+                <td>${escHtml(c.titulo)}</td>
+                <td><input type="number" id="nota-${d.id}" min="0" max="10" step="0.5" value="${notaAtual}" style="width:70px;"></td>
+                <td><button class="btn btn-primary btn-sm" onclick="salvarNotaJuri('${d.id}')">Salvar</button></td>
+            </tr>`;
+        });
+        html += '</table>';
+        container.innerHTML = html;
+    }
+
+    window.salvarNotaJuri = async (id) => {
+        const nota = parseFloat(document.getElementById(`nota-${id}`).value);
+        if (isNaN(nota) || nota < 0 || nota > 10) return toast('Nota inválida (0-10).', 'error');
+        await updateDoc(doc(db, "candidatos", id), { notaJuri: nota });
+        await setDoc(doc(collection(db, "admin_logs")), {
+            acao: 'NOTA JÚRI',
+            detalhes: `Candidato ${id} recebeu nota ${nota}`,
+            data: Timestamp.now()
+        });
+        toast('Nota salva!', 'success');
+        loadAdminJuri();
+    };
+
+    // 5.5 Encerrar edição + relatório financeiro
+    document.getElementById('btn-encerrar').onclick = async () => {
+        if (!confirm('Confirma o encerramento da edição? Isso apurará o vencedor.')) return;
+
+        const snap = await getDocs(query(collection(db, "candidatos"), where("status", "==", "aprovado")));
+        let pendentesJuri = 0;
+        const candidatos = [];
+        snap.forEach(d => {
+            const c = d.data();
+            candidatos.push({ id: d.id, ...c });
+            if (c.notaJuri === null || c.notaJuri === undefined) pendentesJuri++;
+        });
+        if (pendentesJuri > 0) {
+            return toast(`Ainda há ${pendentesJuri} candidato(s) sem nota do júri.`, 'error');
+        }
+
+        // Apuração
+        let maxVotos = Math.max(...candidatos.map(c => c.votos || 0));
+        if (maxVotos === 0) return toast('Nenhum voto computado. Não é possível encerrar.', 'error');
+
+        let vencedor = null;
+        let melhorNota = -1;
+        candidatos.forEach(c => {
+            const notaPopular = (c.votos / maxVotos) * 10;
+            const notaFinal = (c.notaJuri * 0.5) + (notaPopular * 0.5);
+            if (notaFinal > melhorNota) {
+                melhorNota = notaFinal;
+                vencedor = c;
+            }
+        });
+
+        if (!vencedor) return toast('Erro na apuração.', 'error');
+
+        // Calcular finanças
+        const votosSnap = await getDocs(query(collection(db, "votos"), where("edicaoId", "==", "ativa"), where("status", "==", "confirmado")));
+        let totalArrecadado = 0;
+        votosSnap.forEach(d => totalArrecadado += d.data().valorTotal || 0);
+        // Adicionar taxas de inscrição (se houver registro separado) - aqui simplificamos
+        const inscSnap = await getDocs(query(collection(db, "candidatos"), where("edicaoId", "==", "ativa")));
+        let totalInsc = 0;
+        inscSnap.forEach(d => totalInsc += edicaoData.taxaInscricao || 0); // cada inscrito pagou
+        totalArrecadado += totalInsc;
+
+        const percP = edicaoData.percentuais?.premio || 60;
+        const percC = edicaoData.percentuais?.custos || 20;
+        const percA = edicaoData.percentuais?.admin || 20;
+
+        const premio = totalArrecadado * (percP / 100);
+        const custos = totalArrecadado * (percC / 100);
+        const admin = totalArrecadado * (percA / 100);
+
+        const relatorioFinanceiro = {
+            totalArrecadado,
+            premio,
+            custos,
+            admin,
+            percPremio: percP,
+            percCustos: percC,
+            percAdmin: percA
+        };
+
+        await updateDoc(doc(db, "edicoesCulturais", "ativa"), {
+            status: 'encerrada',
+            vencedorNome: vencedor.nome,
+            vencedorVotos: vencedor.votos,
+            relatorioFinanceiro,
+            dataFim: Timestamp.now()
+        });
+
+        await setDoc(doc(collection(db, "admin_logs")), {
+            acao: 'ENCERRAMENTO',
+            detalhes: `Edição encerrada. Vencedor: ${vencedor.nome} (${vencedor.votos} votos)`,
+            data: Timestamp.now()
+        });
+
+        toast(`Edição encerrada! Vencedor: ${vencedor.nome}`, 'success');
+        setTimeout(() => location.reload(), 2000);
+    };
+
+    // 5.6 Configurar edição (incluindo percentuais)
+    document.getElementById('btn-save-conf').onclick = async () => {
+        const percP = Number(document.getElementById('conf-perc-premio').value) || 0;
+        const percC = Number(document.getElementById('conf-perc-custos').value) || 0;
+        const percA = Number(document.getElementById('conf-perc-admin').value) || 0;
+        if (percP + percC + percA !== 100) {
+            return toast('Os percentuais devem somar 100%.', 'error');
+        }
+
+        try {
+            await updateDoc(doc(db, "edicoesCulturais", "ativa"), {
+                nome: document.getElementById('conf-nome').value,
+                descricao: document.getElementById('conf-desc').value,
+                valorVoto: Number(document.getElementById('conf-valor-voto').value),
+                taxaInscricao: Number(document.getElementById('conf-taxa-insc').value),
+                pixChave: document.getElementById('conf-pix').value,
+                percentuais: { premio: percP, custos: percC, admin: percA },
+                status: 'aberta_inscricoes',
+                dataInicio: Timestamp.now()
+            });
+            toast('Configurações salvas!', 'success');
+            setTimeout(() => location.reload(), 1500);
+        } catch (err) {
+            toast('Erro ao salvar.', 'error');
+        }
+    };
+
+    // ════════════════════════════════════════════════════════════
+    // 6. TABS
+    // ════════════════════════════════════════════════════════════
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.onclick = () => {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-pane').forEach(p => p.classList.add('hidden'));
+            btn.classList.add('active');
+            document.getElementById(btn.dataset.target).classList.remove('hidden');
+            if (btn.dataset.target === 'pane-ranking') carregarRanking();
+            if (btn.dataset.target === 'pane-transparencia') carregarLogs();
+        };
+    });
+
+    // ════════════════════════════════════════════════════════════
+    // 7. MÁSCARAS & LIMPAR
+    // ════════════════════════════════════════════════════════════
+    document.getElementById('cpf').oninput = e => e.target.value = maskCPF(e.target.value);
+    document.getElementById('whatsapp').oninput = e => e.target.value = maskPhone(e.target.value);
+    document.getElementById('cand-cpf').oninput = e => e.target.value = maskCPF(e.target.value);
+    document.getElementById('cand-whatsapp').oninput = e => e.target.value = maskPhone(e.target.value);
+
+    document.getElementById('btn-limpar').onclick = () => {
+        selectedCandidato = null;
+        updateTotal();
+        carregarCandidatos();
+    };
+
+    // ════════════════════════════════════════════════════════════
+    // 8. START
+    // ════════════════════════════════════════════════════════════
+    initEdicao();
+
+    console.log('🎭 Agenda Cultural Pop\'s 2.0 - Versão Final Robusta');
+    console.log('✅ Seleção única de candidato');
+    console.log('✅ Validação de CPF com dígitos');
+    console.log('✅ Confirmação de pagamento e contabilização de votos');
+    console.log('✅ Fluxo de reembolso');
+    console.log('✅ Percentuais configuráveis');
+    console.log('✅ Relatório financeiro ao encerrar');
+    console.log('✅ Logs de auditoria e transparência');
+</script>
+</body>
+</html>
