@@ -476,12 +476,14 @@
 
     <!-- PANE ADMIN -->
     <div id="pane-admin" class="tab-pane hidden">
-        <div id="admin-login" class="card" style="max-width:420px; margin:0 auto;">
-            <div class="card-title">🔒 Acesso Administrativo</div>
-            <div class="input-group"><label>E-mail</label><input type="email" id="adm-email"></div>
-            <div class="input-group mt-2"><label>Senha</label><input type="password" id="adm-pass"></div>
-            <button class="btn btn-primary mt-2" id="btn-login">Entrar</button>
-        </div>
+<div id="admin-login" class="card" style="max-width:420px; margin:0 auto;">
+    <div class="card-title">🔒 Acesso Administrativo</div>
+    <form id="admin-login-form" onsubmit="event.preventDefault(); document.getElementById('btn-login').click();">
+        <div class="input-group"><label>E-mail</label><input type="email" id="adm-email"></div>
+        <div class="input-group mt-2"><label>Senha</label><input type="password" id="adm-pass"></div>
+        <button type="button" class="btn btn-primary mt-2" id="btn-login">Entrar</button>
+    </form>
+</div>
         <div id="admin-panel" class="hidden">
             <div class="flex-between">
                 <div><h2 style="font-size:1.2rem;">Painel Admin</h2><p class="text-muted" id="admin-user-email"></p></div>
