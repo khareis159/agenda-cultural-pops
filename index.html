@@ -604,13 +604,26 @@
         appId: "1:684090447941:web:b96d1f6ab76d9caa282b2c"
     };
 
-    import { initializeApp } from "firebase/app";
-    import {
-        getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc,
-        query, where, onSnapshot, writeBatch, orderBy, Timestamp, deleteDoc, runTransaction
-    } from "firebase/firestore";
-    import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "firebase/auth";
-
+import { initializeApp } from "firebase/app";
+import {
+    getFirestore,
+    collection,
+    doc,
+    getDoc,
+    getDocs,
+    setDoc,
+    updateDoc,
+    query,
+    where,
+    onSnapshot,
+    writeBatch,
+    orderBy,
+    Timestamp,
+    deleteDoc,
+    runTransaction,
+    limit  // <-- ADICIONADO AQUI
+} from "firebase/firestore";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "firebase/auth";
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     const auth = getAuth(app);
