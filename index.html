@@ -953,8 +953,9 @@
                 rel.style.display = 'none';
             }
         } catch (err) {
-            container.innerHTML = 'Erro ao carregar logs.';
-        }
+    console.error('Erro ao carregar logs:', err);
+    container.innerHTML = 'Erro ao carregar logs.';
+}
     }
 
 // ============================================================
