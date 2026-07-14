@@ -1162,33 +1162,33 @@
             }
         }
 
-        function updateUI(data) {
-            document.getElementById('edicao-subtitle')?.textContent = `${data.nome} — Voto: ${fmtMoney(data.valorVoto)}`;
-            document.getElementById('edicao-nome')?.textContent = data.nome;
-            document.getElementById('edicao-desc')?.textContent = data.descricao;
-            document.getElementById('label-taxa-insc')?.textContent = fmtMoney(data.taxaInscricao);
-            document.getElementById('conf-nome').value = data.nome || '';
-            document.getElementById('conf-desc').value = data.descricao || '';
-            document.getElementById('conf-valor-voto').value = data.valorVoto || '';
-            document.getElementById('conf-taxa-insc').value = data.taxaInscricao || '';
-            document.getElementById('conf-pix').value = data.pixChave || '';
-            if (data.percentuais) {
-                document.getElementById('conf-perc-premio').value = data.percentuais.premio || 60;
-                document.getElementById('conf-perc-custos').value = data.percentuais.custos || 20;
-                document.getElementById('conf-perc-admin').value = data.percentuais.admin || 20;
-            }
-            if (data.status === 'encerrada') {
-                document.getElementById('voting-area').style.display = 'none';
-                document.getElementById('result-banner').style.display = 'block';
-                document.getElementById('result-text').innerHTML =
-                    `Vencedor: <strong>${data.vencedorNome || '—'}</strong> (${data.vencedorVotos || 0} votos)`;
-            } else {
-                document.getElementById('voting-area').style.display = 'block';
-                document.getElementById('result-banner').style.display = 'none';
-            }
-            document.getElementById('pix-key-value').textContent = data.pixChave || 'Chave não definida';
-        }
-
+function updateUI(data) {
+    const el = (id) => document.getElementById(id);
+    if (el('edicao-subtitle')) el('edicao-subtitle').textContent = `${data.nome} — Voto: ${fmtMoney(data.valorVoto)}`;
+    if (el('edicao-nome')) el('edicao-nome').textContent = data.nome;
+    if (el('edicao-desc')) el('edicao-desc').textContent = data.descricao;
+    if (el('label-taxa-insc')) el('label-taxa-insc').textContent = fmtMoney(data.taxaInscricao);
+    if (el('conf-nome')) el('conf-nome').value = data.nome || '';
+    if (el('conf-desc')) el('conf-desc').value = data.descricao || '';
+    if (el('conf-valor-voto')) el('conf-valor-voto').value = data.valorVoto || '';
+    if (el('conf-taxa-insc')) el('conf-taxa-insc').value = data.taxaInscricao || '';
+    if (el('conf-pix')) el('conf-pix').value = data.pixChave || '';
+    if (data.percentuais) {
+        if (el('conf-perc-premio')) el('conf-perc-premio').value = data.percentuais.premio || 60;
+        if (el('conf-perc-custos')) el('conf-perc-custos').value = data.percentuais.custos || 20;
+        if (el('conf-perc-admin')) el('conf-perc-admin').value = data.percentuais.admin || 20;
+    }
+    if (data.status === 'encerrada') {
+        if (el('voting-area')) el('voting-area').style.display = 'none';
+        if (el('result-banner')) el('result-banner').style.display = 'block';
+        if (el('result-text')) el('result-text').innerHTML =
+            `Vencedor: <strong>${data.vencedorNome || '—'}</strong> (${data.vencedorVotos || 0} votos)`;
+    } else {
+        if (el('voting-area')) el('voting-area').style.display = 'block';
+        if (el('result-banner')) el('result-banner').style.display = 'none';
+    }
+}
+        
         function carregarCandidatos() {
             const container = document.getElementById('grid-candidatos');
             if (!container) return;
