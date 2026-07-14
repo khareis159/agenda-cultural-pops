@@ -493,7 +493,7 @@
     </footer>
 
     <!-- ============================================================
-         SCRIPT PRINCIPAL UNIFICADO
+         SCRIPT PRINCIPAL UNIFICADO (COMPLETO)
          ============================================================ -->
     <script type="module">
         // ════════════════════════════════════════════════════════════
@@ -765,7 +765,6 @@
         function renderPage(page) {
             currentPage = page;
             const content = document.getElementById('pageContent');
-            // Para listeners de outras páginas
             Object.keys(unsubscribeListeners).forEach(key => {
                 if (key !== page) {
                     unsubscribeListeners[key]();
@@ -786,7 +785,6 @@
                 case 'minhas-inscricoes': renderMinhasInscricoes(content); break;
                 default: content.innerHTML = '<h1>Página não encontrada</h1>';
             }
-            // Atualizar navegação
             document.querySelectorAll('.nav-links button[data-page]').forEach(b => {
                 b.classList.toggle('active', b.dataset.page === page);
             });
@@ -808,7 +806,7 @@
                     <div style="display:flex; gap:16px; margin:20px 0; flex-wrap:wrap;">
                         <button class="btn btn-secondary" onclick="navigateTo('votar')">🗳️ Votar</button>
                         <button class="btn btn-primary" onclick="navigateTo('vitrine')">🌟 Ver Talentos</button>
-                       <button class="btn btn-outline" onclick="navigateTo('calendario')">📅 Concursos</button>
+                        <button class="btn btn-outline" onclick="navigateTo('calendario')">📅 Concursos</button>
                     </div>
                     <h2 class="fw-800 mt-3">📌 Destaques</h2>
                     <div class="card-grid">${destaques.map(n => `
@@ -881,7 +879,6 @@
                     </div>
                 </div>
             `;
-            // Inicializar lógica da Agenda
             initEdicaoVotacao();
         }
 
@@ -1031,7 +1028,7 @@
             carregarLogs();
         }
 
-        // -------------------- ADMIN (unificado) --------------------
+        // -------------------- ADMIN (UNIFICADO COMPLETO) --------------------
         function renderAdmin(container) {
             if (currentUserRole !== 'admin') {
                 container.innerHTML = `
@@ -1057,400 +1054,26 @@
                 </div>
                 <div id="adminTables"><div class="skeleton" style="height:300px;"></div></div>
             `;
-            carregarAdminTables();
+            carregarAdminTablesUnificado();
         }
 
-        // -------------------- JÚRI (Agenda) --------------------
-        function renderJuri(container) {
-            if (currentUserRole !== 'admin' && currentUserRole !== 'jurado') {
-                container.innerHTML = `<div class="card"><p class="text-muted">Acesso restrito a administradores e jurados.</p></div>`;
-                return;
-            }
-            container.innerHTML = `
-                <div class="card">
-                    <div class="card-title">🎯 Painel do Júri Técnico</div>
-                    <p class="text-muted">Avalie os candidatos aprovados. Atribua notas de 0 a 10 para cada critério.</p>
-                    <div id="juri-list-container"><div class="skeleton" style="height:200px;"></div></div>
-                </div>
-            `;
-            loadJuriPanel();
-        }
-
-        // -------------------- MINHAS INSCRIÇÕES (Agenda) --------------------
-        function renderMinhasInscricoes(container) {
-            container.innerHTML = `
-                <div class="card">
-                    <div class="card-title">🔍 Minhas Inscrições</div>
-                    <p class="text-muted">Insira seu CPF para visualizar o status das suas inscrições.</p>
-                    <div style="display:flex; gap:10px; flex-wrap:wrap; margin:16px 0;">
-                        <input type="text" id="busca-cpf" placeholder="000.000.000-00" maxlength="14" style="flex:1; min-width:200px;">
-                        <button class="btn btn-primary" id="btn-buscar-inscricoes">Buscar</button>
-                    </div>
-                    <div id="minhas-inscricoes-resultado"></div>
-                </div>
-            `;
-            // Máscara e evento
-            document.getElementById('busca-cpf').oninput = e => e.target.value = maskCPF(e.target.value);
-            document.getElementById('btn-buscar-inscricoes').onclick = async () => {
-                const cpf = unformatCPF(document.getElementById('busca-cpf').value);
-                if (!cpf) return toast('Informe um CPF.', 'error');
-                if (!validarCPF(cpf)) return toast('CPF inválido.', 'error');
-                const container = document.getElementById('minhas-inscricoes-resultado');
-                const q = query(collection(db, "candidatos"), where("cpf", "==", cpf), where("edicaoId", "==", "ativa"));
-                const snap = await getDocs(q);
-                if (snap.empty) {
-                    container.innerHTML = '<p class="text-muted">Nenhuma inscrição encontrada.</p>';
-                    return;
-                }
-                let html = '<div style="margin-top:12px;">';
-                snap.forEach(d => {
-                    const c = d.data();
-                    const statusClass = c.status === 'aprovado' ? 'aprovado' : c.status === 'rejeitado' ? 'rejeitado' : 'pendente';
-                    html += `
-                        <div class="card" style="padding:16px; margin-bottom:12px;">
-                            <div style="display:flex; justify-content:space-between; flex-wrap:wrap;">
-                                <div>
-                                    <strong>${escHtml(c.titulo)}</strong>
-                                    <div style="font-size:0.8rem; color:var(--text-muted);">${escHtml(c.nome)}</div>
-                                    <div style="font-size:0.8rem; color:var(--text-muted);">Categoria: ${escHtml(c.categoria || 'Geral')}</div>
-                                </div>
-                                <div>
-                                    <span class="status-badge ${statusClass}">${c.status}</span>
-                                    ${c.status === 'rejeitado' && c.motivoRejeicao ? `<div style="font-size:0.75rem; color:var(--danger);">Motivo: ${escHtml(c.motivoRejeicao)}</div>` : ''}
-                                </div>
-                            </div>
-                            ${c.link ? `<div style="margin-top:8px;"><a href="${c.link}" target="_blank">▶️ Ver vídeo</a></div>` : ''}
-                        </div>
-                    `;
-                });
-                html += '</div>';
-                container.innerHTML = html;
-            };
-        }
-
-        // ════════════════════════════════════════════════════════════
-        // 9. LÓGICAS DA AGENDA (preservadas)
-        // ════════════════════════════════════════════════════════════
-
-        // Inicializar edição (votação)
-        async function initEdicaoVotacao() {
-            try {
-                const snap = await getDoc(doc(db, "edicoesCulturais", "ativa"));
-                if (snap.exists()) {
-                    edicaoData = snap.data();
-                    updateUI(edicaoData);
-                    carregarCandidatos();
-                    carregarRanking();
-                    carregarLogs();
-                } else {
-                    await setDoc(doc(db, "edicoesCulturais", "ativa"), {
-                        nome: "Edição Piloto - Cultura Livre",
-                        descricao: "Tema Livre. Inscrições abertas.",
-                        valorVoto: 2.00,
-                        taxaInscricao: 5.00,
-                        pixChave: "61999487649",
-                        status: 'aberta_inscricoes',
-                        percentuais: { premio: 60, custos: 20, admin: 20 },
-                        dataInicio: Timestamp.now()
-                    });
-                    toast('Edição padrão criada.', 'success');
-                    setTimeout(() => renderPage('votar'), 500);
-                }
-            } catch (err) {
-                console.error(err);
-                toast('Erro ao carregar edição.', 'error');
-            }
-        }
-
-function updateUI(data) {
-    const el = (id) => document.getElementById(id);
-    if (el('edicao-subtitle')) el('edicao-subtitle').textContent = `${data.nome} — Voto: ${fmtMoney(data.valorVoto)}`;
-    if (el('edicao-nome')) el('edicao-nome').textContent = data.nome;
-    if (el('edicao-desc')) el('edicao-desc').textContent = data.descricao;
-    if (el('label-taxa-insc')) el('label-taxa-insc').textContent = fmtMoney(data.taxaInscricao);
-    if (el('conf-nome')) el('conf-nome').value = data.nome || '';
-    if (el('conf-desc')) el('conf-desc').value = data.descricao || '';
-    if (el('conf-valor-voto')) el('conf-valor-voto').value = data.valorVoto || '';
-    if (el('conf-taxa-insc')) el('conf-taxa-insc').value = data.taxaInscricao || '';
-    if (el('conf-pix')) el('conf-pix').value = data.pixChave || '';
-    if (data.percentuais) {
-        if (el('conf-perc-premio')) el('conf-perc-premio').value = data.percentuais.premio || 60;
-        if (el('conf-perc-custos')) el('conf-perc-custos').value = data.percentuais.custos || 20;
-        if (el('conf-perc-admin')) el('conf-perc-admin').value = data.percentuais.admin || 20;
-    }
-    if (data.status === 'encerrada') {
-        if (el('voting-area')) el('voting-area').style.display = 'none';
-        if (el('result-banner')) el('result-banner').style.display = 'block';
-        if (el('result-text')) el('result-text').innerHTML =
-            `Vencedor: <strong>${data.vencedorNome || '—'}</strong> (${data.vencedorVotos || 0} votos)`;
-    } else {
-        if (el('voting-area')) el('voting-area').style.display = 'block';
-        if (el('result-banner')) el('result-banner').style.display = 'none';
-    }
-}
-        
-        function carregarCandidatos() {
-            const container = document.getElementById('grid-candidatos');
-            if (!container) return;
-            const q = query(collection(db, "candidatos"), where("edicaoId", "==", "ativa"), where("status", "==", "aprovado"));
-            onSnapshot(q, (snapshot) => {
-                globalCandidatos = [];
-                container.innerHTML = '';
-                if (snapshot.empty) {
-                    container.innerHTML = '<div class="text-muted">Nenhum candidato aprovado ainda.</div>';
-                    return;
-                }
-                snapshot.forEach(docSnap => {
-                    const c = { id: docSnap.id, ...docSnap.data() };
-                    globalCandidatos.push(c);
-                    const div = document.createElement('div');
-                    const isSelected = selectedCandidato && selectedCandidato.id === c.id;
-                    div.className = `cand-box ${isSelected ? 'selecionado' : ''}`;
-                    div.innerHTML = `
-                        <img src="${c.foto || 'https://placehold.co/150x100/0d7a4e/white?text=OBRA'}" alt="${c.titulo}">
-                        <div style="padding:6px;">
-                            <strong>${escHtml(c.titulo)}</strong>
-                            <div class="text-muted" style="font-size:0.7rem;">${escHtml(c.nome)}</div>
-                            <div style="font-size:0.75rem; color:var(--primary); font-weight:700;">${c.votos || 0} votos</div>
-                        </div>
-                    `;
-                    div.onclick = () => {
-                        if (edicaoData?.status === 'encerrada') return toast('Edição encerrada.', 'error');
-                        if (selectedCandidato && selectedCandidato.id === c.id) {
-                            selectedCandidato = null;
-                        } else {
-                            selectedCandidato = c;
-                        }
-                        updateTotalVotacao();
-                        carregarCandidatos();
-                    };
-                    container.appendChild(div);
-                });
-            });
-        }
-
-        function updateTotalVotacao() {
-            const valor = selectedCandidato ? edicaoData?.valorVoto || 0 : 0;
-            document.getElementById('total-valor').textContent = fmtMoney(valor);
-            document.getElementById('pix-valor').textContent = fmtMoney(valor);
-            document.getElementById('candidato-escolhido').textContent =
-                selectedCandidato ? escHtml(selectedCandidato.titulo) : 'Nenhum';
-        }
-
-        // Formulário de voto
-        document.getElementById('form-voto')?.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            if (!document.getElementById('aceite-termos').checked) {
-                return toast('Aceite os Termos.', 'error');
-            }
-            if (!selectedCandidato) return toast('Selecione um candidato.', 'error');
-            const cpf = unformatCPF(document.getElementById('cpf').value);
-            if (!validarCPF(cpf)) return toast('CPF inválido.', 'error');
-            const qVoto = query(collection(db, "votos"), where("cpf", "==", cpf), where("edicaoId", "==", "ativa"), where("status", "in", ["pendente", "confirmado"]));
-            const snapVoto = await getDocs(qVoto);
-            if (!snapVoto.empty) return toast('Este CPF já votou nesta edição.', 'error');
-            const votoId = `VOTO_${Date.now()}`;
-            try {
-                const batch = writeBatch(db);
-                batch.set(doc(db, "votos", votoId), {
-                    nome: document.getElementById('nome').value,
-                    cpf: cpf,
-                    email: document.getElementById('email').value,
-                    whatsapp: document.getElementById('whatsapp').value,
-                    candidatoId: selectedCandidato.id,
-                    valorTotal: edicaoData.valorVoto,
-                    status: 'pendente',
-                    edicaoId: 'ativa',
-                    dataCriacao: Timestamp.now()
-                });
-                await batch.commit();
-                toast('Voto registrado! Realize o PIX para confirmar.', 'success');
-                document.getElementById('pix-result').classList.remove('hidden');
-                document.getElementById('card-cadastro').classList.add('hidden');
-                selectedCandidato = null;
-                updateTotalVotacao();
-                carregarCandidatos();
-            } catch (err) {
-                toast('Erro ao registrar voto.', 'error');
-            }
-        });
-
-        // Formulário de inscrição
-        function initInscricao() {
-            document.getElementById('form-inscricao')?.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                if (!document.getElementById('aceite-termos-inscricao').checked) {
-                    return toast('Aceite os Termos.', 'error');
-                }
-                const cpf = unformatCPF(document.getElementById('cand-cpf').value);
-                if (!validarCPF(cpf)) return toast('CPF inválido.', 'error');
-                try {
-                    await setDoc(doc(collection(db, "candidatos")), {
-                        nome: document.getElementById('cand-nome').value,
-                        cpf: cpf,
-                        titulo: document.getElementById('cand-titulo').value,
-                        link: document.getElementById('cand-link').value,
-                        whatsapp: document.getElementById('cand-whatsapp').value,
-                        foto: document.getElementById('cand-foto').value || '',
-                        categoria: document.getElementById('cand-categoria').value || 'Geral',
-                        edicaoId: 'ativa',
-                        status: 'pendente',
-                        votos: 0,
-                        notaJuri: null,
-                        dataInscricao: Timestamp.now()
-                    });
-                    toast('Inscrição enviada! Aguarde aprovação.', 'success');
-                    document.getElementById('form-inscricao').reset();
-                } catch (err) {
-                    toast('Erro na inscrição.', 'error');
-                }
-            });
-        }
-
-        // Ranking
-        async function carregarRanking() {
-            const container = document.getElementById('ranking-content');
-            if (!container) return;
-            const snap = await getDocs(query(collection(db, "candidatos"), where("edicaoId", "==", "ativa"), where("status", "==", "aprovado"), orderBy("votos", "desc")));
-            if (snap.empty) {
-                container.innerHTML = '<p class="text-muted">Nenhum voto computado.</p>';
-                return;
-            }
-            let maxVotos = 0;
-            const candidatos = [];
-            snap.forEach(d => { const c = d.data(); candidatos.push(c); if (c.votos > maxVotos) maxVotos = c.votos; });
-            let html = '<ol class="ranking-ol">';
-            candidatos.forEach(c => {
-                const notaPopular = maxVotos > 0 ? (c.votos / maxVotos) * 10 : 0;
-                const notaFinal = c.notaJuri !== null ? (c.notaJuri * 0.5 + notaPopular * 0.5) : 'Aguardando Júri';
-                const notaStr = notaFinal !== 'Aguardando Júri' ? `| Nota Final: ${notaFinal.toFixed(1)}` : '';
-                html += `<li><strong>${escHtml(c.titulo)}</strong> - ${escHtml(c.nome)} <span style="color:var(--primary);font-weight:700;">${c.votos || 0} votos</span> ${notaStr}</li>`;
-            });
-            html += '</ol>';
-            container.innerHTML = html;
-        }
-
-        // Logs
-        async function carregarLogs() {
-            const container = document.getElementById('logs-content');
-            if (!container) return;
-            try {
-                const q = query(collection(db, "admin_logs"), orderBy("data", "desc"), limit(50));
-                const snap = await getDocs(q);
-                if (snap.empty) {
-                    container.innerHTML = '<p class="text-muted">Nenhuma ação registrada ainda.</p>';
-                    return;
-                }
-                let html = '';
-                snap.forEach(d => {
-                    const log = d.data();
-                    const dataStr = log.data?.toDate().toLocaleString('pt-BR') || '--';
-                    html += `<div style="padding:6px 0; border-bottom:1px solid var(--gray-light);">
-                        <span style="color:var(--text-muted);font-size:0.7rem;">${dataStr}</span>
-                        <strong style="color:var(--primary);margin:0 8px;">${escHtml(log.acao)}</strong>
-                        <span>${escHtml(log.detalhes)}</span>
-                    </div>`;
-                });
-                container.innerHTML = html;
-                const rel = document.getElementById('relatorio-financeiro');
-                if (edicaoData?.status === 'encerrada' && edicaoData?.relatorioFinanceiro) {
-                    rel.style.display = 'block';
-                    const r = edicaoData.relatorioFinanceiro;
-                    rel.innerHTML = `
-                        <div class="card-title">📊 Relatório Financeiro</div>
-                        <div class="form-grid">
-                            <div><strong>Total Arrecadado:</strong> ${fmtMoney(r.totalArrecadado)}</div>
-                            <div><strong>Prêmio (${r.percPremio}%):</strong> ${fmtMoney(r.premio)}</div>
-                            <div><strong>Custos (${r.percCustos}%):</strong> ${fmtMoney(r.custos)}</div>
-                            <div><strong>Taxa Admin (${r.percAdmin}%):</strong> ${fmtMoney(r.admin)}</div>
-                        </div>
-                    `;
-                } else {
-                    rel.style.display = 'none';
-                }
-            } catch (err) {
-                console.error('Erro ao carregar logs:', err);
-                container.innerHTML = 'Erro ao carregar logs.';
-            }
-        }
-
-        // Funções do Júri
-        async function loadJuriPanel() {
-            const container = document.getElementById('juri-list-container');
-            if (!container) return;
-            try {
-                const snap = await getDocs(query(collection(db, "candidatos"), where("edicaoId", "==", "ativa"), where("status", "==", "aprovado")));
-                if (snap.empty) {
-                    container.innerHTML = '<p class="text-muted">Nenhum candidato aprovado para avaliar.</p>';
-                    return;
-                }
-                let html = '';
-                snap.forEach(d => {
-                    const c = d.data();
-                    const notaAtual = c.notaJuri !== null ? c.notaJuri : '';
-                    const aura = c.aura !== undefined ? c.aura : '';
-                    const criatividade = c.criatividade !== undefined ? c.criatividade : '';
-                    const estilo = c.estilo !== undefined ? c.estilo : '';
-                    html += `
-                        <div class="card" style="margin-bottom:12px;">
-                            <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px;">
-                                <div>
-                                    <strong>${escHtml(c.titulo)}</strong> - ${escHtml(c.nome)}
-                                    <div style="font-size:0.8rem; color:var(--text-muted);">
-                                        Categoria: ${escHtml(c.categoria || 'Geral')}
-                                        ${c.link ? `<a href="${c.link}" target="_blank" style="margin-left:8px;">▶️ Ver vídeo</a>` : ''}
-                                    </div>
-                                </div>
-                                <div style="font-size:0.8rem; color:var(--text-muted);">Nota atual: ${notaAtual || 'Não avaliado'}</div>
-                            </div>
-                            <div class="juri-nota-grid">
-                                <div class="juri-nota-item"><label>🌟 Aura (40%)</label><input type="number" id="juri-aura-${d.id}" min="0" max="10" step="0.5" value="${aura}"></div>
-                                <div class="juri-nota-item"><label>💡 Criatividade (30%)</label><input type="number" id="juri-criatividade-${d.id}" min="0" max="10" step="0.5" value="${criatividade}"></div>
-                                <div class="juri-nota-item"><label>🎨 Estilo (30%)</label><input type="number" id="juri-estilo-${d.id}" min="0" max="10" step="0.5" value="${estilo}"></div>
-                            </div>
-                            <button class="btn btn-primary btn-sm" onclick="salvarAvaliacaoJuri('${d.id}')">Salvar Avaliação</button>
-                        </div>
-                    `;
-                });
-                container.innerHTML = html;
-            } catch (err) {
-                container.innerHTML = '<p class="text-muted">Erro ao carregar painel do Júri.</p>';
-                console.error(err);
-            }
-        }
-
-        window.salvarAvaliacaoJuri = async (id) => {
-            const aura = parseFloat(document.getElementById(`juri-aura-${id}`).value);
-            const criatividade = parseFloat(document.getElementById(`juri-criatividade-${id}`).value);
-            const estilo = parseFloat(document.getElementById(`juri-estilo-${id}`).value);
-            if (isNaN(aura) || isNaN(criatividade) || isNaN(estilo)) return toast('Preencha todas as notas.', 'error');
-            if (aura < 0 || aura > 10 || criatividade < 0 || criatividade > 10 || estilo < 0 || estilo > 10) return toast('Notas entre 0 e 10.', 'error');
-            const notaFinal = (aura * 0.4) + (criatividade * 0.3) + (estilo * 0.3);
-            try {
-                await updateDoc(doc(db, "candidatos", id), { aura, criatividade, estilo, notaJuri: parseFloat(notaFinal.toFixed(2)) });
-                await setDoc(doc(collection(db, "admin_logs")), {
-                    acao: 'AVALIAÇÃO JÚRI',
-                    detalhes: `Candidato ${id} avaliado. Nota final: ${notaFinal.toFixed(2)}`,
-                    data: Timestamp.now()
-                });
-                toast(`Avaliação salva! Nota: ${notaFinal.toFixed(2)}`, 'success');
-                loadJuriPanel();
-                carregarRanking();
-            } catch (err) {
-                toast('Erro ao salvar avaliação.', 'error');
-            }
-        };
-
-        // Admin Tables (unificado)
-        async function carregarAdminTables() {
+        // ============================================================
+        // ADMIN TABLES UNIFICADO (COM TODAS AS SEÇÕES)
+        // ============================================================
+        async function carregarAdminTablesUnificado() {
             const tablesDiv = document.getElementById('adminTables');
             if (!tablesDiv) return;
+
+            // Carregar dados
             const [edicoes, concursos, talentos, noticias, dicas, candidatos, votos] = await Promise.all([
-                getData('edicoesCulturais'), getData('concursos'), getData('talentos'), getData('noticias'), getData('dicas'),
-                getData('candidatos'), getData('votos')
+                getData('edicoesCulturais'), getData('concursos'), getData('talentos'),
+                getData('noticias'), getData('dicas'), getData('candidatos'), getData('votos')
             ]);
+
             const totalArrecadado = votos.filter(v => v.status === 'confirmado').reduce((s, v) => s + (v.valorTotal || 0), 0);
-            tablesDiv.innerHTML = `
+
+            let html = `
+                <!-- Resumo Financeiro -->
                 <div class="card" style="border:1.5px solid var(--secondary);">
                     <div class="card-title">💰 Resumo Financeiro</div>
                     <div class="form-grid">
@@ -1459,6 +1082,37 @@ function updateUI(data) {
                         <div><strong>Edição Ativa:</strong> ${edicoes.find(e => e.status !== 'encerrada')?.nome || 'Nenhuma'}</div>
                     </div>
                 </div>
+
+                <!-- ======== SEÇÕES DA AGENDA (OPERACIONAIS) ======== -->
+
+                <!-- 1. Aprovar Candidatos -->
+                <h2 class="mt-3">👥 Aprovar Candidatos</h2>
+                <div style="margin-bottom:12px;">
+                    <select id="filtro-categoria-admin" onchange="loadAdminCandidatosUnificado()">
+                        <option value="">Todas as categorias</option>
+                        <option value="Musica">🎵 Música</option>
+                        <option value="ArtesVisuais">🎨 Artes Visuais</option>
+                        <option value="Poesia">📜 Poesia</option>
+                        <option value="Danca">💃 Dança</option>
+                        <option value="Teatro">🎭 Teatro</option>
+                    </select>
+                </div>
+                <div id="admin-candidatos-unificado">${await renderCandidatosPendentes()}</div>
+
+                <!-- 2. Confirmar Pagamentos de Votos -->
+                <h2 class="mt-3">💰 Confirmar Pagamentos de Votos</h2>
+                <div id="admin-votos-pendentes-unificado">${await renderVotosPendentes()}</div>
+
+                <!-- 3. Notas do Júri (Técnico) -->
+                <h2 class="mt-3">⭐ Notas do Júri (Técnico)</h2>
+                <div id="admin-juri-unificado">${await renderJuriNotas()}</div>
+
+                <!-- 4. Solicitações de Reembolso -->
+                <h2 class="mt-3">↩️ Solicitações de Reembolso</h2>
+                <div id="admin-reembolsos-unificado">${await renderReembolsos()}</div>
+
+                <!-- ======== SEÇÕES DO C3 (CONTEÚDO) ======== -->
+
                 <h2 class="mt-3">🎯 Edições (Concurso Atual)</h2>
                 <table class="admin-table">
                     <thead><tr><th>Nome</th><th>Status</th><th>Votos</th><th>Ações</th></tr></thead>
@@ -1551,6 +1205,685 @@ function updateUI(data) {
                     <p class="text-muted"><strong>💾 Backup:</strong> Use Exportar para baixar todos os dados em JSON. Importar com Merge mescla dados sem sobrescrever.</p>
                 </div>
             `;
+
+            tablesDiv.innerHTML = html;
+
+            // Carregar os dados das seções da Agenda
+            await loadAdminCandidatosUnificado();
+            await carregarVotosPendentesAdminUnificado();
+            await loadAdminJuriUnificado();
+            await carregarReembolsosAdminUnificado();
+        }
+
+        // -------- FUNÇÕES AUXILIARES DE RENDERIZAÇÃO (Agenda) --------
+
+        async function renderCandidatosPendentes() {
+            const snap = await getDocs(query(collection(db, "candidatos"), where("status", "==", "pendente")));
+            if (snap.empty) return '<p class="text-muted">Nenhuma inscrição pendente.</p>';
+            let html = '<table class="admin-table"><thead><tr><th>Nome</th><th>Obra</th><th>Categoria</th><th>Ações</th></tr></thead><tbody>';
+            snap.forEach(d => {
+                const c = d.data();
+                html += `<tr>
+                    <td>${escHtml(c.nome)}</td>
+                    <td><a href="${c.link}" target="_blank">${escHtml(c.titulo)}</a></td>
+                    <td>${escHtml(c.categoria || 'Geral')}</td>
+                    <td>
+                        <div class="admin-cand-actions">
+                            <button class="btn btn-primary btn-sm" onclick="aprovarCandUnificado('${d.id}')">Aprovar</button>
+                            <button class="btn btn-danger btn-sm" onclick="abrirRejeicaoUnificado('${d.id}')">Rejeitar</button>
+                            <button class="btn btn-outline btn-sm" onclick="editarCandidatoUnificado('${d.id}')">✏️</button>
+                        </div>
+                    </td>
+                </tr>`;
+            });
+            html += '</tbody></table>';
+            return html;
+        }
+
+        window.aprovarCandUnificado = async (id) => {
+            await updateDoc(doc(db, "candidatos", id), { status: 'aprovado' });
+            await setDoc(doc(collection(db, "admin_logs")), {
+                acao: 'APROVAÇÃO CANDIDATO',
+                detalhes: `Candidato ${id} aprovado`,
+                data: Timestamp.now()
+            });
+            toast('Aprovado!', 'success');
+            carregarAdminTablesUnificado();
+        };
+
+        window.abrirRejeicaoUnificado = (id) => {
+            const motivo = prompt('Informe o motivo da rejeição:');
+            if (motivo === null) return;
+            if (!motivo.trim()) return toast('Motivo não pode estar vazio.', 'error');
+            rejeitarCandidatoUnificado(id, motivo.trim());
+        };
+
+        async function rejeitarCandidatoUnificado(id, motivo) {
+            await updateDoc(doc(db, "candidatos", id), {
+                status: 'rejeitado',
+                motivoRejeicao: motivo
+            });
+            await setDoc(doc(collection(db, "admin_logs")), {
+                acao: 'REJEIÇÃO CANDIDATO',
+                detalhes: `Candidato ${id} rejeitado. Motivo: ${motivo}`,
+                data: Timestamp.now()
+            });
+            toast('Candidato rejeitado.', 'info');
+            carregarAdminTablesUnificado();
+        }
+
+        window.editarCandidatoUnificado = async (id) => {
+            const snap = await getDoc(doc(db, "candidatos", id));
+            if (!snap.exists()) return toast('Candidato não encontrado.', 'error');
+            const c = snap.data();
+            document.getElementById('modalTitle').textContent = '✏️ Editar Candidato';
+            document.getElementById('modalBody').innerHTML = `
+                <div class="form-grid">
+                    <div class="input-group"><label>Nome</label><input type="text" id="edit-nome" value="${escHtml(c.nome)}"></div>
+                    <div class="input-group"><label>Título</label><input type="text" id="edit-titulo" value="${escHtml(c.titulo)}"></div>
+                    <div class="input-group"><label>Link</label><input type="text" id="edit-link" value="${escHtml(c.link)}"></div>
+                    <div class="input-group"><label>WhatsApp</label><input type="text" id="edit-whatsapp" value="${escHtml(c.whatsapp)}"></div>
+                    <div class="input-group"><label>Categoria</label>
+                        <select id="edit-categoria">
+                            <option value="Musica" ${c.categoria==='Musica'?'selected':''}>🎵 Música</option>
+                            <option value="ArtesVisuais" ${c.categoria==='ArtesVisuais'?'selected':''}>🎨 Artes Visuais</option>
+                            <option value="Poesia" ${c.categoria==='Poesia'?'selected':''}>📜 Poesia</option>
+                            <option value="Danca" ${c.categoria==='Danca'?'selected':''}>💃 Dança</option>
+                            <option value="Teatro" ${c.categoria==='Teatro'?'selected':''}>🎭 Teatro</option>
+                        </select>
+                    </div>
+                    <div class="input-group" style="grid-column: span 2;">
+                        <label>Descrição / Observações</label>
+                        <textarea id="edit-descricao" rows="2">${escHtml(c.descricao || '')}</textarea>
+                    </div>
+                </div>
+            `;
+            document.getElementById('modalActions').innerHTML = `
+                <button class="btn btn-primary" onclick="salvarEdicaoCandidatoUnificado('${id}')">Salvar</button>
+                <button class="btn btn-outline" onclick="closeModal()">Cancelar</button>
+            `;
+            document.getElementById('modalOverlay').classList.add('open');
+        };
+
+        window.salvarEdicaoCandidatoUnificado = async (id) => {
+            const updates = {
+                nome: document.getElementById('edit-nome').value,
+                titulo: document.getElementById('edit-titulo').value,
+                link: document.getElementById('edit-link').value,
+                whatsapp: document.getElementById('edit-whatsapp').value,
+                categoria: document.getElementById('edit-categoria').value,
+                descricao: document.getElementById('edit-descricao').value
+            };
+            await updateDoc(doc(db, "candidatos", id), updates);
+            await setDoc(doc(collection(db, "admin_logs")), {
+                acao: 'EDIÇÃO CANDIDATO',
+                detalhes: `Candidato ${id} editado`,
+                data: Timestamp.now()
+            });
+            toast('Candidato atualizado!', 'success');
+            closeModal();
+            carregarAdminTablesUnificado();
+        };
+
+        async function loadAdminCandidatosUnificado() {
+            const container = document.getElementById('admin-candidatos-unificado');
+            if (!container) return;
+            const categoriaFiltro = document.getElementById('filtro-categoria-admin')?.value || '';
+            let q = query(collection(db, "candidatos"), where("status", "==", "pendente"));
+            if (categoriaFiltro) {
+                q = query(q, where("categoria", "==", categoriaFiltro));
+            }
+            const snap = await getDocs(q);
+            if (snap.empty) {
+                container.innerHTML = '<p class="text-muted">Nenhuma inscrição pendente.</p>';
+                return;
+            }
+            let html = '<table class="admin-table"><thead><tr><th>Nome</th><th>Obra</th><th>Categoria</th><th>Ações</th></tr></thead><tbody>';
+            snap.forEach(d => {
+                const c = d.data();
+                html += `<tr>
+                    <td>${escHtml(c.nome)}</td>
+                    <td><a href="${c.link}" target="_blank">${escHtml(c.titulo)}</a></td>
+                    <td>${escHtml(c.categoria || 'Geral')}</td>
+                    <td>
+                        <div class="admin-cand-actions">
+                            <button class="btn btn-primary btn-sm" onclick="aprovarCandUnificado('${d.id}')">Aprovar</button>
+                            <button class="btn btn-danger btn-sm" onclick="abrirRejeicaoUnificado('${d.id}')">Rejeitar</button>
+                            <button class="btn btn-outline btn-sm" onclick="editarCandidatoUnificado('${d.id}')">✏️</button>
+                        </div>
+                    </td>
+                </tr>`;
+            });
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        // -------- Votos Pendentes --------
+        async function renderVotosPendentes() {
+            const snap = await getDocs(query(collection(db, "votos"), where("status", "==", "pendente")));
+            if (snap.empty) return '<p class="text-muted">Nenhum voto pendente.</p>';
+            let html = '<table class="admin-table"><thead><tr><th>Comprador</th><th>Candidato</th><th>Valor</th><th>Ação</th></tr></thead><tbody>';
+            snap.forEach(d => {
+                const v = d.data();
+                const candNome = globalCandidatos.find(c => c.id === v.candidatoId)?.titulo || v.candidatoId;
+                html += `<tr>
+                    <td>${escHtml(v.nome)}<br><small>${v.cpf}</small></td>
+                    <td>${escHtml(candNome)}</td>
+                    <td>${fmtMoney(v.valorTotal)}</td>
+                    <td><button class="btn btn-primary btn-sm" onclick="confirmarVotoUnificado('${d.id}')">Confirmar</button></td>
+                </tr>`;
+            });
+            html += '</tbody></table>';
+            return html;
+        }
+
+        async function carregarVotosPendentesAdminUnificado() {
+            const container = document.getElementById('admin-votos-pendentes-unificado');
+            if (!container) return;
+            container.innerHTML = await renderVotosPendentes();
+        }
+
+        window.confirmarVotoUnificado = async (votoId) => {
+            if (!confirm('Confirmar pagamento deste voto?')) return;
+            try {
+                await runTransaction(db, async (tx) => {
+                    const vRef = doc(db, "votos", votoId);
+                    const vSnap = await tx.get(vRef);
+                    if (!vSnap.exists()) throw new Error('Voto não encontrado');
+                    const v = vSnap.data();
+                    if (v.status !== 'pendente') throw new Error('Voto já processado');
+                    const candRef = doc(db, "candidatos", v.candidatoId);
+                    const candSnap = await tx.get(candRef);
+                    if (!candSnap.exists()) throw new Error('Candidato não encontrado');
+                    const votosAtuais = candSnap.data().votos || 0;
+                    tx.update(candRef, { votos: votosAtuais + 1 });
+                    tx.update(vRef, { status: 'confirmado', dataConfirmacao: Timestamp.now() });
+                    tx.set(doc(collection(db, "admin_logs")), {
+                        acao: 'CONFIRMAÇÃO VOTO',
+                        detalhes: `Voto ${votoId} confirmado para candidato ${v.candidatoId}`,
+                        data: Timestamp.now()
+                    });
+                });
+                toast('Voto confirmado!', 'success');
+                carregarAdminTablesUnificado();
+            } catch (err) {
+                toast(err.message || 'Erro ao confirmar.', 'error');
+            }
+        };
+
+        // -------- Júri --------
+        async function renderJuriNotas() {
+            const snap = await getDocs(query(collection(db, "candidatos"), where("status", "==", "aprovado")));
+            if (snap.empty) return '<p class="text-muted">Nenhum candidato aprovado.</p>';
+            let html = '<table class="admin-table"><thead><tr><th>Obra</th><th>Nota (0-10)</th><th>Ação</th></tr></thead><tbody>';
+            snap.forEach(d => {
+                const c = d.data();
+                const notaAtual = c.notaJuri !== null ? c.notaJuri : '';
+                html += `<tr>
+                    <td>${escHtml(c.titulo)}</td>
+                    <td><input type="number" id="nota-${d.id}" min="0" max="10" step="0.5" value="${notaAtual}" style="width:70px;"></td>
+                    <td><button class="btn btn-primary btn-sm" onclick="salvarNotaJuriUnificado('${d.id}')">Salvar</button></td>
+                </tr>`;
+            });
+            html += '</tbody></table>';
+            return html;
+        }
+
+        async function loadAdminJuriUnificado() {
+            const container = document.getElementById('admin-juri-unificado');
+            if (!container) return;
+            container.innerHTML = await renderJuriNotas();
+        }
+
+        window.salvarNotaJuriUnificado = async (id) => {
+            const nota = parseFloat(document.getElementById(`nota-${id}`).value);
+            if (isNaN(nota) || nota < 0 || nota > 10) return toast('Nota inválida (0-10).', 'error');
+            try {
+                await updateDoc(doc(db, "candidatos", id), { notaJuri: nota });
+                await setDoc(doc(collection(db, "admin_logs")), {
+                    acao: 'NOTA JÚRI',
+                    detalhes: `Candidato ${id} recebeu nota ${nota}`,
+                    data: Timestamp.now()
+                });
+                toast('Nota salva!', 'success');
+                carregarAdminTablesUnificado();
+            } catch (err) {
+                toast('Erro ao salvar nota.', 'error');
+            }
+        };
+
+        // -------- Reembolsos --------
+        async function renderReembolsos() {
+            const snap = await getDocs(query(collection(db, "votos"), where("status", "==", "reembolso_solicitado")));
+            if (snap.empty) return '<p class="text-muted">Nenhuma solicitação de reembolso.</p>';
+            let html = '<table class="admin-table"><thead><tr><th>Comprador</th><th>Valor</th><th>Ações</th></tr></thead><tbody>';
+            snap.forEach(d => {
+                const v = d.data();
+                html += `<tr>
+                    <td>${escHtml(v.nome)}<br><small>${v.cpf}</small></td>
+                    <td>${fmtMoney(v.valorTotal)}</td>
+                    <td>
+                        <button class="btn btn-success btn-sm" onclick="aprovarReembolsoUnificado('${d.id}')">Aprovar</button>
+                        <button class="btn btn-danger btn-sm" onclick="rejeitarReembolsoUnificado('${d.id}')">Rejeitar</button>
+                    </td>
+                </tr>`;
+            });
+            html += '</tbody></table>';
+            return html;
+        }
+
+        async function carregarReembolsosAdminUnificado() {
+            const container = document.getElementById('admin-reembolsos-unificado');
+            if (!container) return;
+            container.innerHTML = await renderReembolsos();
+        }
+
+        window.aprovarReembolsoUnificado = async (votoId) => {
+            if (!confirm('Aprovar reembolso? O voto será cancelado.')) return;
+            try {
+                await runTransaction(db, async (tx) => {
+                    const vRef = doc(db, "votos", votoId);
+                    const vSnap = await tx.get(vRef);
+                    if (!vSnap.exists()) throw new Error('Voto não encontrado');
+                    const v = vSnap.data();
+                    if (v.status !== 'reembolso_solicitado') throw new Error('Status inválido');
+                    if (v.status === 'confirmado') {
+                        const candRef = doc(db, "candidatos", v.candidatoId);
+                        const candSnap = await tx.get(candRef);
+                        if (candSnap.exists()) {
+                            const votos = candSnap.data().votos || 0;
+                            tx.update(candRef, { votos: Math.max(0, votos - 1) });
+                        }
+                    }
+                    tx.update(vRef, { status: 'cancelado', dataReembolso: Timestamp.now() });
+                    tx.set(doc(collection(db, "admin_logs")), {
+                        acao: 'REEMBOLSO APROVADO',
+                        detalhes: `Voto ${votoId} reembolsado`,
+                        data: Timestamp.now()
+                    });
+                });
+                toast('Reembolso aprovado.', 'success');
+                carregarAdminTablesUnificado();
+            } catch (err) {
+                toast(err.message || 'Erro.', 'error');
+            }
+        };
+
+        window.rejeitarReembolsoUnificado = async (votoId) => {
+            if (!confirm('Rejeitar solicitação de reembolso?')) return;
+            await updateDoc(doc(db, "votos", votoId), { status: 'pendente' });
+            toast('Solicitação rejeitada.', 'info');
+            carregarAdminTablesUnificado();
+        };
+
+        // -------- Júri Público (aba) --------
+        async function loadJuriPanel() {
+            const container = document.getElementById('juri-list-container');
+            if (!container) return;
+            try {
+                const snap = await getDocs(query(collection(db, "candidatos"), where("edicaoId", "==", "ativa"), where("status", "==", "aprovado")));
+                if (snap.empty) {
+                    container.innerHTML = '<p class="text-muted">Nenhum candidato aprovado para avaliar.</p>';
+                    return;
+                }
+                let html = '';
+                snap.forEach(d => {
+                    const c = d.data();
+                    const notaAtual = c.notaJuri !== null ? c.notaJuri : '';
+                    const aura = c.aura !== undefined ? c.aura : '';
+                    const criatividade = c.criatividade !== undefined ? c.criatividade : '';
+                    const estilo = c.estilo !== undefined ? c.estilo : '';
+                    html += `
+                        <div class="card" style="margin-bottom:12px;">
+                            <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+                                <div>
+                                    <strong>${escHtml(c.titulo)}</strong> - ${escHtml(c.nome)}
+                                    <div style="font-size:0.8rem; color:var(--text-muted);">
+                                        Categoria: ${escHtml(c.categoria || 'Geral')}
+                                        ${c.link ? `<a href="${c.link}" target="_blank" style="margin-left:8px;">▶️ Ver vídeo</a>` : ''}
+                                    </div>
+                                </div>
+                                <div style="font-size:0.8rem; color:var(--text-muted);">Nota atual: ${notaAtual || 'Não avaliado'}</div>
+                            </div>
+                            <div class="juri-nota-grid">
+                                <div class="juri-nota-item"><label>🌟 Aura (40%)</label><input type="number" id="juri-aura-${d.id}" min="0" max="10" step="0.5" value="${aura}"></div>
+                                <div class="juri-nota-item"><label>💡 Criatividade (30%)</label><input type="number" id="juri-criatividade-${d.id}" min="0" max="10" step="0.5" value="${criatividade}"></div>
+                                <div class="juri-nota-item"><label>🎨 Estilo (30%)</label><input type="number" id="juri-estilo-${d.id}" min="0" max="10" step="0.5" value="${estilo}"></div>
+                            </div>
+                            <button class="btn btn-primary btn-sm" onclick="salvarAvaliacaoJuri('${d.id}')">Salvar Avaliação</button>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            } catch (err) {
+                container.innerHTML = '<p class="text-muted">Erro ao carregar painel do Júri.</p>';
+                console.error(err);
+            }
+        }
+
+        window.salvarAvaliacaoJuri = async (id) => {
+            const aura = parseFloat(document.getElementById(`juri-aura-${id}`).value);
+            const criatividade = parseFloat(document.getElementById(`juri-criatividade-${id}`).value);
+            const estilo = parseFloat(document.getElementById(`juri-estilo-${id}`).value);
+            if (isNaN(aura) || isNaN(criatividade) || isNaN(estilo)) return toast('Preencha todas as notas.', 'error');
+            if (aura < 0 || aura > 10 || criatividade < 0 || criatividade > 10 || estilo < 0 || estilo > 10) return toast('Notas entre 0 e 10.', 'error');
+            const notaFinal = (aura * 0.4) + (criatividade * 0.3) + (estilo * 0.3);
+            try {
+                await updateDoc(doc(db, "candidatos", id), { aura, criatividade, estilo, notaJuri: parseFloat(notaFinal.toFixed(2)) });
+                await setDoc(doc(collection(db, "admin_logs")), {
+                    acao: 'AVALIAÇÃO JÚRI',
+                    detalhes: `Candidato ${id} avaliado. Nota final: ${notaFinal.toFixed(2)}`,
+                    data: Timestamp.now()
+                });
+                toast(`Avaliação salva! Nota: ${notaFinal.toFixed(2)}`, 'success');
+                loadJuriPanel();
+                carregarRanking();
+            } catch (err) {
+                toast('Erro ao salvar avaliação.', 'error');
+            }
+        };
+
+        // -------------------- JURI (aba pública) --------------------
+        function renderJuri(container) {
+            if (currentUserRole !== 'admin' && currentUserRole !== 'jurado') {
+                container.innerHTML = `<div class="card"><p class="text-muted">Acesso restrito a administradores e jurados.</p></div>`;
+                return;
+            }
+            container.innerHTML = `
+                <div class="card">
+                    <div class="card-title">🎯 Painel do Júri Técnico</div>
+                    <p class="text-muted">Avalie os candidatos aprovados. Atribua notas de 0 a 10 para cada critério.</p>
+                    <div id="juri-list-container"><div class="skeleton" style="height:200px;"></div></div>
+                </div>
+            `;
+            loadJuriPanel();
+        }
+
+        // -------------------- MINHAS INSCRIÇÕES (Agenda) --------------------
+        function renderMinhasInscricoes(container) {
+            container.innerHTML = `
+                <div class="card">
+                    <div class="card-title">🔍 Minhas Inscrições</div>
+                    <p class="text-muted">Insira seu CPF para visualizar o status das suas inscrições.</p>
+                    <div style="display:flex; gap:10px; flex-wrap:wrap; margin:16px 0;">
+                        <input type="text" id="busca-cpf" placeholder="000.000.000-00" maxlength="14" style="flex:1; min-width:200px;">
+                        <button class="btn btn-primary" id="btn-buscar-inscricoes">Buscar</button>
+                    </div>
+                    <div id="minhas-inscricoes-resultado"></div>
+                </div>
+            `;
+            document.getElementById('busca-cpf').oninput = e => e.target.value = maskCPF(e.target.value);
+            document.getElementById('btn-buscar-inscricoes').onclick = async () => {
+                const cpf = unformatCPF(document.getElementById('busca-cpf').value);
+                if (!cpf) return toast('Informe um CPF.', 'error');
+                if (!validarCPF(cpf)) return toast('CPF inválido.', 'error');
+                const container = document.getElementById('minhas-inscricoes-resultado');
+                const q = query(collection(db, "candidatos"), where("cpf", "==", cpf), where("edicaoId", "==", "ativa"));
+                const snap = await getDocs(q);
+                if (snap.empty) {
+                    container.innerHTML = '<p class="text-muted">Nenhuma inscrição encontrada.</p>';
+                    return;
+                }
+                let html = '<div style="margin-top:12px;">';
+                snap.forEach(d => {
+                    const c = d.data();
+                    const statusClass = c.status === 'aprovado' ? 'aprovado' : c.status === 'rejeitado' ? 'rejeitado' : 'pendente';
+                    html += `
+                        <div class="card" style="padding:16px; margin-bottom:12px;">
+                            <div style="display:flex; justify-content:space-between; flex-wrap:wrap;">
+                                <div>
+                                    <strong>${escHtml(c.titulo)}</strong>
+                                    <div style="font-size:0.8rem; color:var(--text-muted);">${escHtml(c.nome)}</div>
+                                    <div style="font-size:0.8rem; color:var(--text-muted);">Categoria: ${escHtml(c.categoria || 'Geral')}</div>
+                                </div>
+                                <div>
+                                    <span class="status-badge ${statusClass}">${c.status}</span>
+                                    ${c.status === 'rejeitado' && c.motivoRejeicao ? `<div style="font-size:0.75rem; color:var(--danger);">Motivo: ${escHtml(c.motivoRejeicao)}</div>` : ''}
+                                </div>
+                            </div>
+                            ${c.link ? `<div style="margin-top:8px;"><a href="${c.link}" target="_blank">▶️ Ver vídeo</a></div>` : ''}
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                container.innerHTML = html;
+            };
+        }
+
+        // ════════════════════════════════════════════════════════════
+        // 9. LÓGICAS DA AGENDA (preservadas)
+        // ════════════════════════════════════════════════════════════
+        async function initEdicaoVotacao() {
+            try {
+                const snap = await getDoc(doc(db, "edicoesCulturais", "ativa"));
+                if (snap.exists()) {
+                    edicaoData = snap.data();
+                    updateUI(edicaoData);
+                    carregarCandidatos();
+                    carregarRanking();
+                    carregarLogs();
+                } else {
+                    await setDoc(doc(db, "edicoesCulturais", "ativa"), {
+                        nome: "Edição Piloto - Cultura Livre",
+                        descricao: "Tema Livre. Inscrições abertas.",
+                        valorVoto: 2.00,
+                        taxaInscricao: 5.00,
+                        pixChave: "61999487649",
+                        status: 'aberta_inscricoes',
+                        percentuais: { premio: 60, custos: 20, admin: 20 },
+                        dataInicio: Timestamp.now()
+                    });
+                    toast('Edição padrão criada.', 'success');
+                    setTimeout(() => renderPage('votar'), 500);
+                }
+            } catch (err) {
+                console.error(err);
+                toast('Erro ao carregar edição.', 'error');
+            }
+        }
+
+        function updateUI(data) {
+            const el = (id) => document.getElementById(id);
+            if (el('edicao-subtitle')) el('edicao-subtitle').textContent = `${data.nome} — Voto: ${fmtMoney(data.valorVoto)}`;
+            if (el('edicao-nome')) el('edicao-nome').textContent = data.nome;
+            if (el('edicao-desc')) el('edicao-desc').textContent = data.descricao;
+            if (el('label-taxa-insc')) el('label-taxa-insc').textContent = fmtMoney(data.taxaInscricao);
+            if (el('conf-nome')) el('conf-nome').value = data.nome || '';
+            if (el('conf-desc')) el('conf-desc').value = data.descricao || '';
+            if (el('conf-valor-voto')) el('conf-valor-voto').value = data.valorVoto || '';
+            if (el('conf-taxa-insc')) el('conf-taxa-insc').value = data.taxaInscricao || '';
+            if (el('conf-pix')) el('conf-pix').value = data.pixChave || '';
+            if (data.percentuais) {
+                if (el('conf-perc-premio')) el('conf-perc-premio').value = data.percentuais.premio || 60;
+                if (el('conf-perc-custos')) el('conf-perc-custos').value = data.percentuais.custos || 20;
+                if (el('conf-perc-admin')) el('conf-perc-admin').value = data.percentuais.admin || 20;
+            }
+            if (data.status === 'encerrada') {
+                if (el('voting-area')) el('voting-area').style.display = 'none';
+                if (el('result-banner')) el('result-banner').style.display = 'block';
+                if (el('result-text')) el('result-text').innerHTML =
+                    `Vencedor: <strong>${data.vencedorNome || '—'}</strong> (${data.vencedorVotos || 0} votos)`;
+            } else {
+                if (el('voting-area')) el('voting-area').style.display = 'block';
+                if (el('result-banner')) el('result-banner').style.display = 'none';
+            }
+        }
+
+        function carregarCandidatos() {
+            const container = document.getElementById('grid-candidatos');
+            if (!container) return;
+            const q = query(collection(db, "candidatos"), where("edicaoId", "==", "ativa"), where("status", "==", "aprovado"));
+            onSnapshot(q, (snapshot) => {
+                globalCandidatos = [];
+                container.innerHTML = '';
+                if (snapshot.empty) {
+                    container.innerHTML = '<div class="text-muted">Nenhum candidato aprovado ainda.</div>';
+                    return;
+                }
+                snapshot.forEach(docSnap => {
+                    const c = { id: docSnap.id, ...docSnap.data() };
+                    globalCandidatos.push(c);
+                    const div = document.createElement('div');
+                    const isSelected = selectedCandidato && selectedCandidato.id === c.id;
+                    div.className = `cand-box ${isSelected ? 'selecionado' : ''}`;
+                    div.innerHTML = `
+                        <img src="${c.foto || 'https://placehold.co/150x100/0d7a4e/white?text=OBRA'}" alt="${c.titulo}">
+                        <div style="padding:6px;">
+                            <strong>${escHtml(c.titulo)}</strong>
+                            <div class="text-muted" style="font-size:0.7rem;">${escHtml(c.nome)}</div>
+                            <div style="font-size:0.75rem; color:var(--primary); font-weight:700;">${c.votos || 0} votos</div>
+                        </div>
+                    `;
+                    div.onclick = () => {
+                        if (edicaoData?.status === 'encerrada') return toast('Edição encerrada.', 'error');
+                        if (selectedCandidato && selectedCandidato.id === c.id) {
+                            selectedCandidato = null;
+                        } else {
+                            selectedCandidato = c;
+                        }
+                        updateTotalVotacao();
+                        carregarCandidatos();
+                    };
+                    container.appendChild(div);
+                });
+            });
+        }
+
+        function updateTotalVotacao() {
+            const valor = selectedCandidato ? edicaoData?.valorVoto || 0 : 0;
+            document.getElementById('total-valor').textContent = fmtMoney(valor);
+            document.getElementById('pix-valor').textContent = fmtMoney(valor);
+            document.getElementById('candidato-escolhido').textContent =
+                selectedCandidato ? escHtml(selectedCandidato.titulo) : 'Nenhum';
+        }
+
+        document.getElementById('form-voto')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!document.getElementById('aceite-termos').checked) return toast('Aceite os Termos.', 'error');
+            if (!selectedCandidato) return toast('Selecione um candidato.', 'error');
+            const cpf = unformatCPF(document.getElementById('cpf').value);
+            if (!validarCPF(cpf)) return toast('CPF inválido.', 'error');
+            const qVoto = query(collection(db, "votos"), where("cpf", "==", cpf), where("edicaoId", "==", "ativa"), where("status", "in", ["pendente", "confirmado"]));
+            const snapVoto = await getDocs(qVoto);
+            if (!snapVoto.empty) return toast('Este CPF já votou nesta edição.', 'error');
+            const votoId = `VOTO_${Date.now()}`;
+            try {
+                const batch = writeBatch(db);
+                batch.set(doc(db, "votos", votoId), {
+                    nome: document.getElementById('nome').value,
+                    cpf: cpf,
+                    email: document.getElementById('email').value,
+                    whatsapp: document.getElementById('whatsapp').value,
+                    candidatoId: selectedCandidato.id,
+                    valorTotal: edicaoData.valorVoto,
+                    status: 'pendente',
+                    edicaoId: 'ativa',
+                    dataCriacao: Timestamp.now()
+                });
+                await batch.commit();
+                toast('Voto registrado! Realize o PIX para confirmar.', 'success');
+                document.getElementById('pix-result').classList.remove('hidden');
+                document.getElementById('card-cadastro').classList.add('hidden');
+                selectedCandidato = null;
+                updateTotalVotacao();
+                carregarCandidatos();
+            } catch (err) {
+                toast('Erro ao registrar voto.', 'error');
+            }
+        });
+
+        function initInscricao() {
+            document.getElementById('form-inscricao')?.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                if (!document.getElementById('aceite-termos-inscricao').checked) return toast('Aceite os Termos.', 'error');
+                const cpf = unformatCPF(document.getElementById('cand-cpf').value);
+                if (!validarCPF(cpf)) return toast('CPF inválido.', 'error');
+                try {
+                    await setDoc(doc(collection(db, "candidatos")), {
+                        nome: document.getElementById('cand-nome').value,
+                        cpf: cpf,
+                        titulo: document.getElementById('cand-titulo').value,
+                        link: document.getElementById('cand-link').value,
+                        whatsapp: document.getElementById('cand-whatsapp').value,
+                        foto: document.getElementById('cand-foto').value || '',
+                        categoria: document.getElementById('cand-categoria').value || 'Geral',
+                        edicaoId: 'ativa',
+                        status: 'pendente',
+                        votos: 0,
+                        notaJuri: null,
+                        dataInscricao: Timestamp.now()
+                    });
+                    toast('Inscrição enviada! Aguarde aprovação.', 'success');
+                    document.getElementById('form-inscricao').reset();
+                } catch (err) {
+                    toast('Erro na inscrição.', 'error');
+                }
+            });
+        }
+
+        async function carregarRanking() {
+            const container = document.getElementById('ranking-content');
+            if (!container) return;
+            const snap = await getDocs(query(collection(db, "candidatos"), where("edicaoId", "==", "ativa"), where("status", "==", "aprovado"), orderBy("votos", "desc")));
+            if (snap.empty) {
+                container.innerHTML = '<p class="text-muted">Nenhum voto computado.</p>';
+                return;
+            }
+            let maxVotos = 0;
+            const candidatos = [];
+            snap.forEach(d => { const c = d.data(); candidatos.push(c); if (c.votos > maxVotos) maxVotos = c.votos; });
+            let html = '<ol class="ranking-ol">';
+            candidatos.forEach(c => {
+                const notaPopular = maxVotos > 0 ? (c.votos / maxVotos) * 10 : 0;
+                const notaFinal = c.notaJuri !== null ? (c.notaJuri * 0.5 + notaPopular * 0.5) : 'Aguardando Júri';
+                const notaStr = notaFinal !== 'Aguardando Júri' ? `| Nota Final: ${notaFinal.toFixed(1)}` : '';
+                html += `<li><strong>${escHtml(c.titulo)}</strong> - ${escHtml(c.nome)} <span style="color:var(--primary);font-weight:700;">${c.votos || 0} votos</span> ${notaStr}</li>`;
+            });
+            html += '</ol>';
+            container.innerHTML = html;
+        }
+
+        async function carregarLogs() {
+            const container = document.getElementById('logs-content');
+            if (!container) return;
+            try {
+                const q = query(collection(db, "admin_logs"), orderBy("data", "desc"), limit(50));
+                const snap = await getDocs(q);
+                if (snap.empty) {
+                    container.innerHTML = '<p class="text-muted">Nenhuma ação registrada ainda.</p>';
+                    return;
+                }
+                let html = '';
+                snap.forEach(d => {
+                    const log = d.data();
+                    const dataStr = log.data?.toDate().toLocaleString('pt-BR') || '--';
+                    html += `<div style="padding:6px 0; border-bottom:1px solid var(--gray-light);">
+                        <span style="color:var(--text-muted);font-size:0.7rem;">${dataStr}</span>
+                        <strong style="color:var(--primary);margin:0 8px;">${escHtml(log.acao)}</strong>
+                        <span>${escHtml(log.detalhes)}</span>
+                    </div>`;
+                });
+                container.innerHTML = html;
+                const rel = document.getElementById('relatorio-financeiro');
+                if (edicaoData?.status === 'encerrada' && edicaoData?.relatorioFinanceiro) {
+                    rel.style.display = 'block';
+                    const r = edicaoData.relatorioFinanceiro;
+                    rel.innerHTML = `
+                        <div class="card-title">📊 Relatório Financeiro</div>
+                        <div class="form-grid">
+                            <div><strong>Total Arrecadado:</strong> ${fmtMoney(r.totalArrecadado)}</div>
+                            <div><strong>Prêmio (${r.percPremio}%):</strong> ${fmtMoney(r.premio)}</div>
+                            <div><strong>Custos (${r.percCustos}%):</strong> ${fmtMoney(r.custos)}</div>
+                            <div><strong>Taxa Admin (${r.percAdmin}%):</strong> ${fmtMoney(r.admin)}</div>
+                        </div>
+                    `;
+                } else {
+                    rel.style.display = 'none';
+                }
+            } catch (err) {
+                console.error('Erro ao carregar logs:', err);
+                container.innerHTML = 'Erro ao carregar logs.';
+            }
         }
 
         // Encerrar edição (Agenda)
@@ -1574,7 +1907,6 @@ function updateUI(data) {
                 if (notaFinal > melhorNota) { melhorNota = notaFinal; vencedor = c; }
             });
             if (!vencedor) return toast('Erro na apuração.', 'error');
-            // Calcular finanças
             const votosSnap = await getDocs(query(collection(db, "votos"), where("edicaoId", "==", "ativa"), where("status", "==", "confirmado")));
             let totalArrecadado = 0;
             votosSnap.forEach(d => totalArrecadado += d.data().valorTotal || 0);
@@ -1867,7 +2199,6 @@ function updateUI(data) {
         // ════════════════════════════════════════════════════════════
         // 12. MÁSCARAS E INICIALIZAÇÃO
         // ════════════════════════════════════════════════════════════
-        // Máscaras para os formulários que podem estar em diferentes páginas (via delegation)
         document.addEventListener('input', function(e) {
             if (e.target.id === 'cpf' || e.target.id === 'cand-cpf' || e.target.id === 'search-cpf') {
                 e.target.value = maskCPF(e.target.value);
@@ -1889,10 +2220,10 @@ function updateUI(data) {
         const initialPage = (pageParam && ['home','votar','inscrever','ranking','vitrine','dicas','calendario','transparencia','admin','juri','minhas-inscricoes'].includes(pageParam)) ? pageParam : 'home';
         renderPage(initialPage);
 
-        console.log('🎭 C3 · Agenda Cultural Pop\'s 2.0 – Sistema Unificado');
-        console.log('✅ Todas as funcionalidades integradas.');
+        console.log('🎭 C3 · Agenda Cultural Pop\'s 2.0 – Sistema Unificado COMPLETO');
+        console.log('✅ Todas as funcionalidades da Agenda e do C3 integradas.');
         console.log('📦 Dados em tempo real com Firestore.');
-        console.log('👑 Área Admin com gestão completa.');
+        console.log('👑 Área Admin com gestão completa (conteúdo + operacional).');
         console.log('💡 Para criar o admin: documento na coleção "users" com role="admin".');
     </script>
 </body>
