@@ -1112,49 +1112,55 @@ if (user.email === 'c4brbb@gmail.com') {
         }
 
         // -------------------- ADMIN (UNIFICADO COMPLETO) --------------------
-        function renderAdmin(container) {
-            if (currentUserRole !== 'admin') {
-                container.innerHTML = `
-                    <div class="card" style="text-align:center; padding:40px;">
-                        <h1 class="fw-800">🔒 Acesso Restrito</h1>
-                        <p class="text-muted">Você precisa estar logado como administrador.</p>
-                        <button class="btn btn-primary mt-2" onclick="showLoginModal()">Entrar como Admin</button>
-                    </div>
-                `;
-                return;
-            }
-            container.innerHTML = `
-                <h1 class="fw-800">👑 Painel Administrativo</h1>
-                <div style="display:flex; gap:12px; flex-wrap:wrap; margin:16px 0;">
-                    <button class="btn btn-primary" data-admin-action="add-edicao">➕ Nova Edição</button>
-                    <button class="btn btn-primary" data-admin-action="add-concurso">➕ Concurso (Portfólio)</button>
-                    <button class="btn btn-primary" data-admin-action="add-talento">➕ Talento</button>
-                    <button class="btn btn-primary" data-admin-action="add-noticia">➕ Notícia</button>
-                    <button class="btn btn-primary" data-admin-action="add-dica">➕ Dica</button>
-                    <button class="btn btn-secondary" data-admin-action="export-backup">📤 Exportar Backup</button>
-                    <button class="btn btn-outline" data-admin-action="import-backup">📥 Importar Merge</button>
-                    <input type="file" id="importMergeInput" accept=".json" style="display:none">
-                </div>
-                <div id="adminTables"><div class="skeleton" style="height:300px;"></div></div>
-            `;
-            // Adicionar listeners para os botões do admin
-            container.querySelectorAll('[data-admin-action]').forEach(btn => {
-                btn.onclick = () => {
-                    const action = btn.dataset.adminAction;
-                    if (action === 'add-edicao') showAddModal('edicoesCulturais', 'Edição');
-                    else if (action === 'add-concurso') showAddModal('concursos', 'Concurso');
-                    else if (action === 'add-talento') showAddModal('talentos', 'Talento');
-                    else if (action === 'add-noticia') showAddModal('noticias', 'Notícia');
-                    else if (action === 'add-dica') showAddModal('dicas', 'Dica');
-                    else if (action === 'export-backup') exportarBackupCompleto();
-                    else if (action === 'import-backup') document.getElementById('importMergeInput').click();
-                };
-            });
-            document.getElementById('importMergeInput').onchange = importarBackupCompleto;
+function renderAdmin(container) {
+    // Fallback: se o usuário atual tem o email c4brbb@gmail.com, força admin
+    let isAdmin = (currentUserRole === 'admin');
+    if (currentUser && currentUser.email === 'c4brbb@gmail.com') {
+        isAdmin = true;
+        currentUserRole = 'admin';
+    }
+    
+    if (!isAdmin) {
+        container.innerHTML = `
+            <div class="card" style="text-align:center; padding:40px;">
+                <h1 class="fw-800">🔒 Acesso Restrito</h1>
+                <p class="text-muted">Você precisa estar logado como administrador.</p>
+                <button class="btn btn-primary mt-2" onclick="showLoginModal()">Entrar como Admin</button>
+            </div>
+        `;
+        return;
+    }
+    container.innerHTML = `
+        <h1 class="fw-800">👑 Painel Administrativo</h1>
+        <div style="display:flex; gap:12px; flex-wrap:wrap; margin:16px 0;">
+            <button class="btn btn-primary" data-admin-action="add-edicao">➕ Nova Edição</button>
+            <button class="btn btn-primary" data-admin-action="add-concurso">➕ Concurso (Portfólio)</button>
+            <button class="btn btn-primary" data-admin-action="add-talento">➕ Talento</button>
+            <button class="btn btn-primary" data-admin-action="add-noticia">➕ Notícia</button>
+            <button class="btn btn-primary" data-admin-action="add-dica">➕ Dica</button>
+            <button class="btn btn-secondary" data-admin-action="export-backup">📤 Exportar Backup</button>
+            <button class="btn btn-outline" data-admin-action="import-backup">📥 Importar Merge</button>
+            <input type="file" id="importMergeInput" accept=".json" style="display:none">
+        </div>
+        <div id="adminTables"><div class="skeleton" style="height:300px;"></div></div>
+    `;
+    // Adicionar listeners para os botões do admin
+    container.querySelectorAll('[data-admin-action]').forEach(btn => {
+        btn.onclick = () => {
+            const action = btn.dataset.adminAction;
+            if (action === 'add-edicao') showAddModal('edicoesCulturais', 'Edição');
+            else if (action === 'add-concurso') showAddModal('concursos', 'Concurso');
+            else if (action === 'add-talento') showAddModal('talentos', 'Talento');
+            else if (action === 'add-noticia') showAddModal('noticias', 'Notícia');
+            else if (action === 'add-dica') showAddModal('dicas', 'Dica');
+            else if (action === 'export-backup') exportarBackupCompleto();
+            else if (action === 'import-backup') document.getElementById('importMergeInput').click();
+        };
+    });
+    document.getElementById('importMergeInput').onchange = importarBackupCompleto;
 
-            carregarAdminTablesUnificado();
-        }
-
+    carregarAdminTablesUnificado();
+}       
         // -------------------- JURI (pública) --------------------
         function renderJuri(container) {
             if (currentUserRole !== 'admin' && currentUserRole !== 'jurado') {
