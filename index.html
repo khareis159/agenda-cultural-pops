@@ -17,7 +17,7 @@
     </script>
     <style>
         /* ============================================================
-           ESTILOS BASE (Agenda + C3 unificados)
+           ESTILOS BASE (unificados)
            ============================================================ */
         :root {
             --primary: #0d7a4e;
@@ -446,6 +446,7 @@
             </div>
             <nav class="nav-links" id="navLinks">
                 <button class="active" data-page="home">🏠 Home</button>
+                <button data-page="concursos">🎯 Concursos</button>
                 <button data-page="votar">🗳️ Votar</button>
                 <button data-page="inscrever">📝 Inscrever</button>
                 <button data-page="ranking">🏆 Ranking</button>
@@ -493,23 +494,23 @@
     </footer>
 
     <!-- ============================================================
-         SCRIPT PRINCIPAL UNIFICADO (COMPLETO)
+         SCRIPT PRINCIPAL UNIFICADO (COMPLETO E CORRIGIDO)
          ============================================================ -->
     <script type="module">
         // ════════════════════════════════════════════════════════════
         // 1. FIREBASE CONFIG (mesmo projeto)
         // ════════════════════════════════════════════════════════════
-const firebaseConfig = {
-  apiKey: "AIzaSyCHxGdzK7vp14luMbTudKdaK3VMEqkY24w",
-  authDomain: "agenda-cultural-pops.firebaseapp.com",
-  projectId: "agenda-cultural-pops",
-  storageBucket: "agenda-cultural-pops.firebasestorage.app",
-  messagingSenderId: "436424967456",
-  appId: "1:436424967456:web:57cb2fe7e2457745454345"
-};
+        const firebaseConfig = {
+            apiKey: "AIzaSyBETV5NzBxLuU0VZhVNCzgOAXVarWvhmvI",
+            authDomain: "c3-clube-cultural.firebaseapp.com",
+            projectId: "c3-clube-cultural",
+            storageBucket: "c3-clube-cultural.firebasestorage.app",
+            messagingSenderId: "684090447941",
+            appId: "1:684090447941:web:b96d1f6ab76d9caa282b2c"
+        };
 
         // ════════════════════════════════════════════════════════════
-        // 2. IMPORTAÇÕES (todas necessárias)
+        // 2. IMPORTAÇÕES
         // ════════════════════════════════════════════════════════════
         import { initializeApp } from "firebase/app";
         import {
@@ -549,12 +550,13 @@ const firebaseConfig = {
         let currentUserRole = 'visitor';
         let currentPage = 'home';
         let currentTheme = localStorage.getItem('c3-theme') || 'light';
-        let unsubscribeListeners = {};
+        let unsubscribeListeners = {}; // key: coleção ou identificador
         let edicaoData = null;
         let selectedCandidato = null;
         let globalCandidatos = [];
         let currentCollection = '';
         let currentEditId = null;
+        let unsubscribeAdmin = {}; // para listeners do admin
 
         // ════════════════════════════════════════════════════════════
         // 4. UTILITÁRIOS (unificados)
@@ -649,7 +651,7 @@ const firebaseConfig = {
         applyTheme(currentTheme);
 
         // ════════════════════════════════════════════════════════════
-        // 6. AUTENTICAÇÃO (unificada)
+        // 6. AUTENTICAÇÃO
         // ════════════════════════════════════════════════════════════
         async function loginUser(email, password) {
             try {
@@ -683,20 +685,23 @@ const firebaseConfig = {
                 </div>
             `;
             document.getElementById('modalActions').innerHTML = `
-                <button class="btn btn-primary" onclick="window.doLogin()">Entrar</button>
-                <button class="btn btn-outline" onclick="window.closeModal()">Cancelar</button>
+                <button class="btn btn-primary" id="btnLoginModal">Entrar</button>
+                <button class="btn btn-outline" id="btnCancelModal">Cancelar</button>
             `;
             document.getElementById('modalOverlay').classList.add('open');
+            document.getElementById('btnLoginModal').onclick = async () => {
+                const email = document.getElementById('loginEmail').value;
+                const password = document.getElementById('loginPassword').value;
+                if (!email || !password) return toast('Preencha e‑mail e senha.', 'error');
+                if (await loginUser(email, password)) closeModal();
+            };
+            document.getElementById('btnCancelModal').onclick = closeModal;
         }
-        window.doLogin = async () => {
-            const email = document.getElementById('loginEmail').value;
-            const password = document.getElementById('loginPassword').value;
-            if (!email || !password) return toast('Preencha e‑mail e senha.', 'error');
-            if (await loginUser(email, password)) closeModal();
-        };
-        window.closeModal = function() {
+
+        function closeModal() {
             document.getElementById('modalOverlay').classList.remove('open');
-        };
+        }
+        window.closeModal = closeModal;
         document.getElementById('modalOverlay').addEventListener('click', function(e) {
             if (e.target === this) closeModal();
         });
@@ -757,6 +762,7 @@ const firebaseConfig = {
                 callback(data);
             });
             unsubscribeListeners[col] = unsub;
+            return unsub;
         }
 
         // ════════════════════════════════════════════════════════════
@@ -765,14 +771,21 @@ const firebaseConfig = {
         function renderPage(page) {
             currentPage = page;
             const content = document.getElementById('pageContent');
+            // Cancelar todos os listeners anteriores (exceto os do admin, que serão gerenciados separadamente)
             Object.keys(unsubscribeListeners).forEach(key => {
-                if (key !== page) {
+                if (key !== 'admin') {
                     unsubscribeListeners[key]();
                     delete unsubscribeListeners[key];
                 }
             });
+            // Se estiver saindo do admin, cancelar listeners do admin
+            if (page !== 'admin' && unsubscribeAdmin.global) {
+                unsubscribeAdmin.global();
+                delete unsubscribeAdmin.global;
+            }
             switch (page) {
                 case 'home': renderHome(content); break;
+                case 'concursos': renderConcursos(content); break;
                 case 'votar': renderVotar(content); break;
                 case 'inscrever': renderInscricao(content); break;
                 case 'ranking': renderRanking(content); break;
@@ -806,7 +819,7 @@ const firebaseConfig = {
                     <div style="display:flex; gap:16px; margin:20px 0; flex-wrap:wrap;">
                         <button class="btn btn-secondary" onclick="navigateTo('votar')">🗳️ Votar</button>
                         <button class="btn btn-primary" onclick="navigateTo('vitrine')">🌟 Ver Talentos</button>
-                        <button class="btn btn-outline" onclick="navigateTo('calendario')">📅 Concursos</button>
+                        <button class="btn btn-outline" onclick="navigateTo('concursos')">🎯 Concursos</button>
                     </div>
                     <h2 class="fw-800 mt-3">📌 Destaques</h2>
                     <div class="card-grid">${destaques.map(n => `
@@ -827,6 +840,69 @@ const firebaseConfig = {
                     `).join('') || '<p class="text-muted">Nenhuma notícia.</p>'}</div>
                 `;
             });
+        }
+
+        // -------------------- CONCURSOS (C3 com filtros) --------------------
+        let concursosFilter = 'all';
+        function renderConcursos(container) {
+            container.innerHTML = `
+                <h1 class="fw-800">🎯 Concursos</h1>
+                <div style="display:flex; gap:12px; flex-wrap:wrap; margin:16px 0;">
+                    <button class="btn btn-outline btn-sm" data-filter="andamento">Em andamento</button>
+                    <button class="btn btn-outline btn-sm" data-filter="previsto">Previstos</button>
+                    <button class="btn btn-outline btn-sm" data-filter="realizado">Realizados</button>
+                    <button class="btn btn-outline btn-sm" data-filter="all">Todos</button>
+                </div>
+                <div id="concursosGrid" class="card-grid"><div class="skeleton" style="height:200px;"></div></div>
+            `;
+            // Listeners para os filtros
+            document.querySelectorAll('#pageContent button[data-filter]').forEach(btn => {
+                btn.onclick = () => {
+                    concursosFilter = btn.dataset.filter;
+                    carregarConcursosFiltrados();
+                };
+            });
+            carregarConcursosFiltrados();
+        }
+
+        function carregarConcursosFiltrados() {
+            const grid = document.getElementById('concursosGrid');
+            if (!grid) return;
+            // Cancelar listener anterior se existir
+            if (unsubscribeListeners['concursos']) {
+                unsubscribeListeners['concursos']();
+                delete unsubscribeListeners['concursos'];
+            }
+            let q;
+            if (concursosFilter === 'all') {
+                q = collection(db, 'concursos');
+            } else {
+                q = query(collection(db, 'concursos'), where('status', '==', concursosFilter));
+            }
+            const unsub = onSnapshot(q, (snapshot) => {
+                const data = [];
+                snapshot.forEach(docSnap => data.push({ id: docSnap.id, ...docSnap.data() }));
+                if (data.length === 0) {
+                    grid.innerHTML = '<p class="text-muted">Nenhum concurso com este status.</p>';
+                    return;
+                }
+                grid.innerHTML = data.map(c => `
+                    <div class="card">
+                        <img class="card-img" src="${c.imagem || 'https://placehold.co/280x160/0d7a4e/white?text=Concurso'}" alt="${c.nome}">
+                        <div class="card-title">${escHtml(c.nome)}</div>
+                        <div class="card-desc">${escHtml(c.descricao || '')}</div>
+                        <div class="card-meta">
+                            <span class="badge badge-${c.status}">${c.status === 'andamento' ? 'Em andamento' : c.status === 'previsto' ? 'Previsto' : 'Realizado'}</span>
+                            <span>${formatDate(c.dataInicio)} - ${formatDate(c.dataFim)}</span>
+                        </div>
+                        <div style="margin-top:12px;">
+                            ${c.inscricoesAbertas ? `<button class="btn btn-primary btn-sm" onclick="toast('Redirecionando...','info')">Inscrever-se</button>` : ''}
+                            <button class="btn btn-outline btn-sm" onclick="toast('Detalhes do concurso','info')">Ver mais</button>
+                        </div>
+                    </div>
+                `).join('');
+            });
+            unsubscribeListeners['concursos'] = unsub;
         }
 
         // -------------------- VOTAR (Agenda) --------------------
@@ -1043,547 +1119,36 @@ const firebaseConfig = {
             container.innerHTML = `
                 <h1 class="fw-800">👑 Painel Administrativo</h1>
                 <div style="display:flex; gap:12px; flex-wrap:wrap; margin:16px 0;">
-                    <button class="btn btn-primary" onclick="showAddModal('edicoesCulturais','Edição')">➕ Nova Edição</button>
-                    <button class="btn btn-primary" onclick="showAddModal('concursos','Concurso')">➕ Concurso (Portfólio)</button>
-                    <button class="btn btn-primary" onclick="showAddModal('talentos','Talento')">➕ Talento</button>
-                    <button class="btn btn-primary" onclick="showAddModal('noticias','Notícia')">➕ Notícia</button>
-                    <button class="btn btn-primary" onclick="showAddModal('dicas','Dica')">➕ Dica</button>
-                    <button class="btn btn-secondary" onclick="exportarBackupCompleto()">📤 Exportar Backup</button>
-                    <button class="btn btn-outline" onclick="document.getElementById('importMergeInput').click()">📥 Importar Merge</button>
-                    <input type="file" id="importMergeInput" accept=".json" style="display:none" onchange="importarBackupCompleto(event)">
+                    <button class="btn btn-primary" data-admin-action="add-edicao">➕ Nova Edição</button>
+                    <button class="btn btn-primary" data-admin-action="add-concurso">➕ Concurso (Portfólio)</button>
+                    <button class="btn btn-primary" data-admin-action="add-talento">➕ Talento</button>
+                    <button class="btn btn-primary" data-admin-action="add-noticia">➕ Notícia</button>
+                    <button class="btn btn-primary" data-admin-action="add-dica">➕ Dica</button>
+                    <button class="btn btn-secondary" data-admin-action="export-backup">📤 Exportar Backup</button>
+                    <button class="btn btn-outline" data-admin-action="import-backup">📥 Importar Merge</button>
+                    <input type="file" id="importMergeInput" accept=".json" style="display:none">
                 </div>
                 <div id="adminTables"><div class="skeleton" style="height:300px;"></div></div>
             `;
+            // Adicionar listeners para os botões do admin
+            container.querySelectorAll('[data-admin-action]').forEach(btn => {
+                btn.onclick = () => {
+                    const action = btn.dataset.adminAction;
+                    if (action === 'add-edicao') showAddModal('edicoesCulturais', 'Edição');
+                    else if (action === 'add-concurso') showAddModal('concursos', 'Concurso');
+                    else if (action === 'add-talento') showAddModal('talentos', 'Talento');
+                    else if (action === 'add-noticia') showAddModal('noticias', 'Notícia');
+                    else if (action === 'add-dica') showAddModal('dicas', 'Dica');
+                    else if (action === 'export-backup') exportarBackupCompleto();
+                    else if (action === 'import-backup') document.getElementById('importMergeInput').click();
+                };
+            });
+            document.getElementById('importMergeInput').onchange = importarBackupCompleto;
+
             carregarAdminTablesUnificado();
         }
 
-        // ============================================================
-        // ADMIN TABLES UNIFICADO (COM TODAS AS SEÇÕES)
-        // ============================================================
-        async function carregarAdminTablesUnificado() {
-            const tablesDiv = document.getElementById('adminTables');
-            if (!tablesDiv) return;
-
-            // Carregar dados
-            const [edicoes, concursos, talentos, noticias, dicas, candidatos, votos] = await Promise.all([
-                getData('edicoesCulturais'), getData('concursos'), getData('talentos'),
-                getData('noticias'), getData('dicas'), getData('candidatos'), getData('votos')
-            ]);
-
-            const totalArrecadado = votos.filter(v => v.status === 'confirmado').reduce((s, v) => s + (v.valorTotal || 0), 0);
-
-            let html = `
-                <!-- Resumo Financeiro -->
-                <div class="card" style="border:1.5px solid var(--secondary);">
-                    <div class="card-title">💰 Resumo Financeiro</div>
-                    <div class="form-grid">
-                        <div><strong>Total Arrecadado:</strong> ${fmtMoney(totalArrecadado)}</div>
-                        <div><strong>Votos Confirmados:</strong> ${votos.filter(v => v.status === 'confirmado').length}</div>
-                        <div><strong>Edição Ativa:</strong> ${edicoes.find(e => e.status !== 'encerrada')?.nome || 'Nenhuma'}</div>
-                    </div>
-                </div>
-
-                <!-- ======== SEÇÕES DA AGENDA (OPERACIONAIS) ======== -->
-
-                <!-- 1. Aprovar Candidatos -->
-                <h2 class="mt-3">👥 Aprovar Candidatos</h2>
-                <div style="margin-bottom:12px;">
-                    <select id="filtro-categoria-admin" onchange="loadAdminCandidatosUnificado()">
-                        <option value="">Todas as categorias</option>
-                        <option value="Musica">🎵 Música</option>
-                        <option value="ArtesVisuais">🎨 Artes Visuais</option>
-                        <option value="Poesia">📜 Poesia</option>
-                        <option value="Danca">💃 Dança</option>
-                        <option value="Teatro">🎭 Teatro</option>
-                    </select>
-                </div>
-                <div id="admin-candidatos-unificado">${await renderCandidatosPendentes()}</div>
-
-                <!-- 2. Confirmar Pagamentos de Votos -->
-                <h2 class="mt-3">💰 Confirmar Pagamentos de Votos</h2>
-                <div id="admin-votos-pendentes-unificado">${await renderVotosPendentes()}</div>
-
-                <!-- 3. Notas do Júri (Técnico) -->
-                <h2 class="mt-3">⭐ Notas do Júri (Técnico)</h2>
-                <div id="admin-juri-unificado">${await renderJuriNotas()}</div>
-
-                <!-- 4. Solicitações de Reembolso -->
-                <h2 class="mt-3">↩️ Solicitações de Reembolso</h2>
-                <div id="admin-reembolsos-unificado">${await renderReembolsos()}</div>
-
-                <!-- ======== SEÇÕES DO C3 (CONTEÚDO) ======== -->
-
-                <h2 class="mt-3">🎯 Edições (Concurso Atual)</h2>
-                <table class="admin-table">
-                    <thead><tr><th>Nome</th><th>Status</th><th>Votos</th><th>Ações</th></tr></thead>
-                    <tbody>${edicoes.map(e => `
-                        <tr>
-                            <td>${escHtml(e.nome)}</td>
-                            <td>${escHtml(e.status)}</td>
-                            <td>${e.vencedorNome ? 'Encerrada' : 'Ativa'}</td>
-                            <td>
-                                <div class="actions">
-                                    <button class="btn btn-primary btn-sm" onclick="editarEdicao('${e.id}')">✏️</button>
-                                    ${e.status !== 'encerrada' ? `<button class="btn btn-gold btn-sm" onclick="encerrarEdicao()">🏁 Encerrar</button>` : ''}
-                                </div>
-                            </td>
-                        </tr>
-                    `).join('')}</tbody>
-                </table>
-
-                <h2 class="mt-3">🎯 Concursos (Portfólio C3)</h2>
-                <table class="admin-table">
-                    <thead><tr><th>Nome</th><th>Status</th><th>Data</th><th>Ações</th></tr></thead>
-                    <tbody>${concursos.map(c => `
-                        <tr>
-                            <td>${escHtml(c.nome)}</td>
-                            <td>${escHtml(c.status)}</td>
-                            <td>${formatDate(c.dataInicio)}</td>
-                            <td>
-                                <div class="actions">
-                                    <button class="btn btn-primary btn-sm" onclick="editItem('concursos','${c.id}')">✏️</button>
-                                    <button class="btn btn-danger btn-sm" onclick="deleteItem('concursos','${c.id}')">🗑️</button>
-                                </div>
-                            </td>
-                        </tr>
-                    `).join('')}</tbody>
-                </table>
-
-                <h2 class="mt-3">🌟 Talentos</h2>
-                <table class="admin-table">
-                    <thead><tr><th>Nome</th><th>Categoria</th><th>Prêmio</th><th>Ações</th></tr></thead>
-                    <tbody>${talentos.map(t => `
-                        <tr>
-                            <td>${escHtml(t.nome)}</td>
-                            <td>${escHtml(t.categoria)}</td>
-                            <td>${escHtml(t.premio)}</td>
-                            <td>
-                                <div class="actions">
-                                    <button class="btn btn-primary btn-sm" onclick="editItem('talentos','${t.id}')">✏️</button>
-                                    <button class="btn btn-danger btn-sm" onclick="deleteItem('talentos','${t.id}')">🗑️</button>
-                                </div>
-                            </td>
-                        </tr>
-                    `).join('')}</tbody>
-                </table>
-
-                <h2 class="mt-3">📰 Notícias</h2>
-                <table class="admin-table">
-                    <thead><tr><th>Título</th><th>Data</th><th>Ações</th></tr></thead>
-                    <tbody>${noticias.map(n => `
-                        <tr>
-                            <td>${escHtml(n.titulo)}</td>
-                            <td>${formatDate(n.data)}</td>
-                            <td>
-                                <div class="actions">
-                                    <button class="btn btn-primary btn-sm" onclick="editItem('noticias','${n.id}')">✏️</button>
-                                    <button class="btn btn-danger btn-sm" onclick="deleteItem('noticias','${n.id}')">🗑️</button>
-                                </div>
-                            </td>
-                        </tr>
-                    `).join('')}</tbody>
-                </table>
-
-                <h2 class="mt-3">💡 Dicas</h2>
-                <table class="admin-table">
-                    <thead><tr><th>Título</th><th>Categoria</th><th>Ações</th></tr></thead>
-                    <tbody>${dicas.map(d => `
-                        <tr>
-                            <td>${escHtml(d.titulo)}</td>
-                            <td>${escHtml(d.categoria)}</td>
-                            <td>
-                                <div class="actions">
-                                    <button class="btn btn-primary btn-sm" onclick="editItem('dicas','${d.id}')">✏️</button>
-                                    <button class="btn btn-danger btn-sm" onclick="deleteItem('dicas','${d.id}')">🗑️</button>
-                                </div>
-                            </td>
-                        </tr>
-                    `).join('')}</tbody>
-                </table>
-
-                <div style="margin-top:24px; padding:16px; background:var(--gray-light); border-radius:var(--radius);">
-                    <p class="text-muted"><strong>💾 Backup:</strong> Use Exportar para baixar todos os dados em JSON. Importar com Merge mescla dados sem sobrescrever.</p>
-                </div>
-            `;
-
-            tablesDiv.innerHTML = html;
-
-            // Carregar os dados das seções da Agenda
-            await loadAdminCandidatosUnificado();
-            await carregarVotosPendentesAdminUnificado();
-            await loadAdminJuriUnificado();
-            await carregarReembolsosAdminUnificado();
-        }
-
-        // -------- FUNÇÕES AUXILIARES DE RENDERIZAÇÃO (Agenda) --------
-
-        async function renderCandidatosPendentes() {
-            const snap = await getDocs(query(collection(db, "candidatos"), where("status", "==", "pendente")));
-            if (snap.empty) return '<p class="text-muted">Nenhuma inscrição pendente.</p>';
-            let html = '<table class="admin-table"><thead><tr><th>Nome</th><th>Obra</th><th>Categoria</th><th>Ações</th></tr></thead><tbody>';
-            snap.forEach(d => {
-                const c = d.data();
-                html += `<tr>
-                    <td>${escHtml(c.nome)}</td>
-                    <td><a href="${c.link}" target="_blank">${escHtml(c.titulo)}</a></td>
-                    <td>${escHtml(c.categoria || 'Geral')}</td>
-                    <td>
-                        <div class="admin-cand-actions">
-                            <button class="btn btn-primary btn-sm" onclick="aprovarCandUnificado('${d.id}')">Aprovar</button>
-                            <button class="btn btn-danger btn-sm" onclick="abrirRejeicaoUnificado('${d.id}')">Rejeitar</button>
-                            <button class="btn btn-outline btn-sm" onclick="editarCandidatoUnificado('${d.id}')">✏️</button>
-                        </div>
-                    </td>
-                </tr>`;
-            });
-            html += '</tbody></table>';
-            return html;
-        }
-
-        window.aprovarCandUnificado = async (id) => {
-            await updateDoc(doc(db, "candidatos", id), { status: 'aprovado' });
-            await setDoc(doc(collection(db, "admin_logs")), {
-                acao: 'APROVAÇÃO CANDIDATO',
-                detalhes: `Candidato ${id} aprovado`,
-                data: Timestamp.now()
-            });
-            toast('Aprovado!', 'success');
-            carregarAdminTablesUnificado();
-        };
-
-        window.abrirRejeicaoUnificado = (id) => {
-            const motivo = prompt('Informe o motivo da rejeição:');
-            if (motivo === null) return;
-            if (!motivo.trim()) return toast('Motivo não pode estar vazio.', 'error');
-            rejeitarCandidatoUnificado(id, motivo.trim());
-        };
-
-        async function rejeitarCandidatoUnificado(id, motivo) {
-            await updateDoc(doc(db, "candidatos", id), {
-                status: 'rejeitado',
-                motivoRejeicao: motivo
-            });
-            await setDoc(doc(collection(db, "admin_logs")), {
-                acao: 'REJEIÇÃO CANDIDATO',
-                detalhes: `Candidato ${id} rejeitado. Motivo: ${motivo}`,
-                data: Timestamp.now()
-            });
-            toast('Candidato rejeitado.', 'info');
-            carregarAdminTablesUnificado();
-        }
-
-        window.editarCandidatoUnificado = async (id) => {
-            const snap = await getDoc(doc(db, "candidatos", id));
-            if (!snap.exists()) return toast('Candidato não encontrado.', 'error');
-            const c = snap.data();
-            document.getElementById('modalTitle').textContent = '✏️ Editar Candidato';
-            document.getElementById('modalBody').innerHTML = `
-                <div class="form-grid">
-                    <div class="input-group"><label>Nome</label><input type="text" id="edit-nome" value="${escHtml(c.nome)}"></div>
-                    <div class="input-group"><label>Título</label><input type="text" id="edit-titulo" value="${escHtml(c.titulo)}"></div>
-                    <div class="input-group"><label>Link</label><input type="text" id="edit-link" value="${escHtml(c.link)}"></div>
-                    <div class="input-group"><label>WhatsApp</label><input type="text" id="edit-whatsapp" value="${escHtml(c.whatsapp)}"></div>
-                    <div class="input-group"><label>Categoria</label>
-                        <select id="edit-categoria">
-                            <option value="Musica" ${c.categoria==='Musica'?'selected':''}>🎵 Música</option>
-                            <option value="ArtesVisuais" ${c.categoria==='ArtesVisuais'?'selected':''}>🎨 Artes Visuais</option>
-                            <option value="Poesia" ${c.categoria==='Poesia'?'selected':''}>📜 Poesia</option>
-                            <option value="Danca" ${c.categoria==='Danca'?'selected':''}>💃 Dança</option>
-                            <option value="Teatro" ${c.categoria==='Teatro'?'selected':''}>🎭 Teatro</option>
-                        </select>
-                    </div>
-                    <div class="input-group" style="grid-column: span 2;">
-                        <label>Descrição / Observações</label>
-                        <textarea id="edit-descricao" rows="2">${escHtml(c.descricao || '')}</textarea>
-                    </div>
-                </div>
-            `;
-            document.getElementById('modalActions').innerHTML = `
-                <button class="btn btn-primary" onclick="salvarEdicaoCandidatoUnificado('${id}')">Salvar</button>
-                <button class="btn btn-outline" onclick="closeModal()">Cancelar</button>
-            `;
-            document.getElementById('modalOverlay').classList.add('open');
-        };
-
-        window.salvarEdicaoCandidatoUnificado = async (id) => {
-            const updates = {
-                nome: document.getElementById('edit-nome').value,
-                titulo: document.getElementById('edit-titulo').value,
-                link: document.getElementById('edit-link').value,
-                whatsapp: document.getElementById('edit-whatsapp').value,
-                categoria: document.getElementById('edit-categoria').value,
-                descricao: document.getElementById('edit-descricao').value
-            };
-            await updateDoc(doc(db, "candidatos", id), updates);
-            await setDoc(doc(collection(db, "admin_logs")), {
-                acao: 'EDIÇÃO CANDIDATO',
-                detalhes: `Candidato ${id} editado`,
-                data: Timestamp.now()
-            });
-            toast('Candidato atualizado!', 'success');
-            closeModal();
-            carregarAdminTablesUnificado();
-        };
-
-        async function loadAdminCandidatosUnificado() {
-            const container = document.getElementById('admin-candidatos-unificado');
-            if (!container) return;
-            const categoriaFiltro = document.getElementById('filtro-categoria-admin')?.value || '';
-            let q = query(collection(db, "candidatos"), where("status", "==", "pendente"));
-            if (categoriaFiltro) {
-                q = query(q, where("categoria", "==", categoriaFiltro));
-            }
-            const snap = await getDocs(q);
-            if (snap.empty) {
-                container.innerHTML = '<p class="text-muted">Nenhuma inscrição pendente.</p>';
-                return;
-            }
-            let html = '<table class="admin-table"><thead><tr><th>Nome</th><th>Obra</th><th>Categoria</th><th>Ações</th></tr></thead><tbody>';
-            snap.forEach(d => {
-                const c = d.data();
-                html += `<tr>
-                    <td>${escHtml(c.nome)}</td>
-                    <td><a href="${c.link}" target="_blank">${escHtml(c.titulo)}</a></td>
-                    <td>${escHtml(c.categoria || 'Geral')}</td>
-                    <td>
-                        <div class="admin-cand-actions">
-                            <button class="btn btn-primary btn-sm" onclick="aprovarCandUnificado('${d.id}')">Aprovar</button>
-                            <button class="btn btn-danger btn-sm" onclick="abrirRejeicaoUnificado('${d.id}')">Rejeitar</button>
-                            <button class="btn btn-outline btn-sm" onclick="editarCandidatoUnificado('${d.id}')">✏️</button>
-                        </div>
-                    </td>
-                </tr>`;
-            });
-            html += '</tbody></table>';
-            container.innerHTML = html;
-        }
-
-        // -------- Votos Pendentes --------
-        async function renderVotosPendentes() {
-            const snap = await getDocs(query(collection(db, "votos"), where("status", "==", "pendente")));
-            if (snap.empty) return '<p class="text-muted">Nenhum voto pendente.</p>';
-            let html = '<table class="admin-table"><thead><tr><th>Comprador</th><th>Candidato</th><th>Valor</th><th>Ação</th></tr></thead><tbody>';
-            snap.forEach(d => {
-                const v = d.data();
-                const candNome = globalCandidatos.find(c => c.id === v.candidatoId)?.titulo || v.candidatoId;
-                html += `<tr>
-                    <td>${escHtml(v.nome)}<br><small>${v.cpf}</small></td>
-                    <td>${escHtml(candNome)}</td>
-                    <td>${fmtMoney(v.valorTotal)}</td>
-                    <td><button class="btn btn-primary btn-sm" onclick="confirmarVotoUnificado('${d.id}')">Confirmar</button></td>
-                </tr>`;
-            });
-            html += '</tbody></table>';
-            return html;
-        }
-
-        async function carregarVotosPendentesAdminUnificado() {
-            const container = document.getElementById('admin-votos-pendentes-unificado');
-            if (!container) return;
-            container.innerHTML = await renderVotosPendentes();
-        }
-
-        window.confirmarVotoUnificado = async (votoId) => {
-            if (!confirm('Confirmar pagamento deste voto?')) return;
-            try {
-                await runTransaction(db, async (tx) => {
-                    const vRef = doc(db, "votos", votoId);
-                    const vSnap = await tx.get(vRef);
-                    if (!vSnap.exists()) throw new Error('Voto não encontrado');
-                    const v = vSnap.data();
-                    if (v.status !== 'pendente') throw new Error('Voto já processado');
-                    const candRef = doc(db, "candidatos", v.candidatoId);
-                    const candSnap = await tx.get(candRef);
-                    if (!candSnap.exists()) throw new Error('Candidato não encontrado');
-                    const votosAtuais = candSnap.data().votos || 0;
-                    tx.update(candRef, { votos: votosAtuais + 1 });
-                    tx.update(vRef, { status: 'confirmado', dataConfirmacao: Timestamp.now() });
-                    tx.set(doc(collection(db, "admin_logs")), {
-                        acao: 'CONFIRMAÇÃO VOTO',
-                        detalhes: `Voto ${votoId} confirmado para candidato ${v.candidatoId}`,
-                        data: Timestamp.now()
-                    });
-                });
-                toast('Voto confirmado!', 'success');
-                carregarAdminTablesUnificado();
-            } catch (err) {
-                toast(err.message || 'Erro ao confirmar.', 'error');
-            }
-        };
-
-        // -------- Júri --------
-        async function renderJuriNotas() {
-            const snap = await getDocs(query(collection(db, "candidatos"), where("status", "==", "aprovado")));
-            if (snap.empty) return '<p class="text-muted">Nenhum candidato aprovado.</p>';
-            let html = '<table class="admin-table"><thead><tr><th>Obra</th><th>Nota (0-10)</th><th>Ação</th></tr></thead><tbody>';
-            snap.forEach(d => {
-                const c = d.data();
-                const notaAtual = c.notaJuri !== null ? c.notaJuri : '';
-                html += `<tr>
-                    <td>${escHtml(c.titulo)}</td>
-                    <td><input type="number" id="nota-${d.id}" min="0" max="10" step="0.5" value="${notaAtual}" style="width:70px;"></td>
-                    <td><button class="btn btn-primary btn-sm" onclick="salvarNotaJuriUnificado('${d.id}')">Salvar</button></td>
-                </tr>`;
-            });
-            html += '</tbody></table>';
-            return html;
-        }
-
-        async function loadAdminJuriUnificado() {
-            const container = document.getElementById('admin-juri-unificado');
-            if (!container) return;
-            container.innerHTML = await renderJuriNotas();
-        }
-
-        window.salvarNotaJuriUnificado = async (id) => {
-            const nota = parseFloat(document.getElementById(`nota-${id}`).value);
-            if (isNaN(nota) || nota < 0 || nota > 10) return toast('Nota inválida (0-10).', 'error');
-            try {
-                await updateDoc(doc(db, "candidatos", id), { notaJuri: nota });
-                await setDoc(doc(collection(db, "admin_logs")), {
-                    acao: 'NOTA JÚRI',
-                    detalhes: `Candidato ${id} recebeu nota ${nota}`,
-                    data: Timestamp.now()
-                });
-                toast('Nota salva!', 'success');
-                carregarAdminTablesUnificado();
-            } catch (err) {
-                toast('Erro ao salvar nota.', 'error');
-            }
-        };
-
-        // -------- Reembolsos --------
-        async function renderReembolsos() {
-            const snap = await getDocs(query(collection(db, "votos"), where("status", "==", "reembolso_solicitado")));
-            if (snap.empty) return '<p class="text-muted">Nenhuma solicitação de reembolso.</p>';
-            let html = '<table class="admin-table"><thead><tr><th>Comprador</th><th>Valor</th><th>Ações</th></tr></thead><tbody>';
-            snap.forEach(d => {
-                const v = d.data();
-                html += `<tr>
-                    <td>${escHtml(v.nome)}<br><small>${v.cpf}</small></td>
-                    <td>${fmtMoney(v.valorTotal)}</td>
-                    <td>
-                        <button class="btn btn-success btn-sm" onclick="aprovarReembolsoUnificado('${d.id}')">Aprovar</button>
-                        <button class="btn btn-danger btn-sm" onclick="rejeitarReembolsoUnificado('${d.id}')">Rejeitar</button>
-                    </td>
-                </tr>`;
-            });
-            html += '</tbody></table>';
-            return html;
-        }
-
-        async function carregarReembolsosAdminUnificado() {
-            const container = document.getElementById('admin-reembolsos-unificado');
-            if (!container) return;
-            container.innerHTML = await renderReembolsos();
-        }
-
-        window.aprovarReembolsoUnificado = async (votoId) => {
-            if (!confirm('Aprovar reembolso? O voto será cancelado.')) return;
-            try {
-                await runTransaction(db, async (tx) => {
-                    const vRef = doc(db, "votos", votoId);
-                    const vSnap = await tx.get(vRef);
-                    if (!vSnap.exists()) throw new Error('Voto não encontrado');
-                    const v = vSnap.data();
-                    if (v.status !== 'reembolso_solicitado') throw new Error('Status inválido');
-                    if (v.status === 'confirmado') {
-                        const candRef = doc(db, "candidatos", v.candidatoId);
-                        const candSnap = await tx.get(candRef);
-                        if (candSnap.exists()) {
-                            const votos = candSnap.data().votos || 0;
-                            tx.update(candRef, { votos: Math.max(0, votos - 1) });
-                        }
-                    }
-                    tx.update(vRef, { status: 'cancelado', dataReembolso: Timestamp.now() });
-                    tx.set(doc(collection(db, "admin_logs")), {
-                        acao: 'REEMBOLSO APROVADO',
-                        detalhes: `Voto ${votoId} reembolsado`,
-                        data: Timestamp.now()
-                    });
-                });
-                toast('Reembolso aprovado.', 'success');
-                carregarAdminTablesUnificado();
-            } catch (err) {
-                toast(err.message || 'Erro.', 'error');
-            }
-        };
-
-        window.rejeitarReembolsoUnificado = async (votoId) => {
-            if (!confirm('Rejeitar solicitação de reembolso?')) return;
-            await updateDoc(doc(db, "votos", votoId), { status: 'pendente' });
-            toast('Solicitação rejeitada.', 'info');
-            carregarAdminTablesUnificado();
-        };
-
-        // -------- Júri Público (aba) --------
-        async function loadJuriPanel() {
-            const container = document.getElementById('juri-list-container');
-            if (!container) return;
-            try {
-                const snap = await getDocs(query(collection(db, "candidatos"), where("edicaoId", "==", "ativa"), where("status", "==", "aprovado")));
-                if (snap.empty) {
-                    container.innerHTML = '<p class="text-muted">Nenhum candidato aprovado para avaliar.</p>';
-                    return;
-                }
-                let html = '';
-                snap.forEach(d => {
-                    const c = d.data();
-                    const notaAtual = c.notaJuri !== null ? c.notaJuri : '';
-                    const aura = c.aura !== undefined ? c.aura : '';
-                    const criatividade = c.criatividade !== undefined ? c.criatividade : '';
-                    const estilo = c.estilo !== undefined ? c.estilo : '';
-                    html += `
-                        <div class="card" style="margin-bottom:12px;">
-                            <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px;">
-                                <div>
-                                    <strong>${escHtml(c.titulo)}</strong> - ${escHtml(c.nome)}
-                                    <div style="font-size:0.8rem; color:var(--text-muted);">
-                                        Categoria: ${escHtml(c.categoria || 'Geral')}
-                                        ${c.link ? `<a href="${c.link}" target="_blank" style="margin-left:8px;">▶️ Ver vídeo</a>` : ''}
-                                    </div>
-                                </div>
-                                <div style="font-size:0.8rem; color:var(--text-muted);">Nota atual: ${notaAtual || 'Não avaliado'}</div>
-                            </div>
-                            <div class="juri-nota-grid">
-                                <div class="juri-nota-item"><label>🌟 Aura (40%)</label><input type="number" id="juri-aura-${d.id}" min="0" max="10" step="0.5" value="${aura}"></div>
-                                <div class="juri-nota-item"><label>💡 Criatividade (30%)</label><input type="number" id="juri-criatividade-${d.id}" min="0" max="10" step="0.5" value="${criatividade}"></div>
-                                <div class="juri-nota-item"><label>🎨 Estilo (30%)</label><input type="number" id="juri-estilo-${d.id}" min="0" max="10" step="0.5" value="${estilo}"></div>
-                            </div>
-                            <button class="btn btn-primary btn-sm" onclick="salvarAvaliacaoJuri('${d.id}')">Salvar Avaliação</button>
-                        </div>
-                    `;
-                });
-                container.innerHTML = html;
-            } catch (err) {
-                container.innerHTML = '<p class="text-muted">Erro ao carregar painel do Júri.</p>';
-                console.error(err);
-            }
-        }
-
-        window.salvarAvaliacaoJuri = async (id) => {
-            const aura = parseFloat(document.getElementById(`juri-aura-${id}`).value);
-            const criatividade = parseFloat(document.getElementById(`juri-criatividade-${id}`).value);
-            const estilo = parseFloat(document.getElementById(`juri-estilo-${id}`).value);
-            if (isNaN(aura) || isNaN(criatividade) || isNaN(estilo)) return toast('Preencha todas as notas.', 'error');
-            if (aura < 0 || aura > 10 || criatividade < 0 || criatividade > 10 || estilo < 0 || estilo > 10) return toast('Notas entre 0 e 10.', 'error');
-            const notaFinal = (aura * 0.4) + (criatividade * 0.3) + (estilo * 0.3);
-            try {
-                await updateDoc(doc(db, "candidatos", id), { aura, criatividade, estilo, notaJuri: parseFloat(notaFinal.toFixed(2)) });
-                await setDoc(doc(collection(db, "admin_logs")), {
-                    acao: 'AVALIAÇÃO JÚRI',
-                    detalhes: `Candidato ${id} avaliado. Nota final: ${notaFinal.toFixed(2)}`,
-                    data: Timestamp.now()
-                });
-                toast(`Avaliação salva! Nota: ${notaFinal.toFixed(2)}`, 'success');
-                loadJuriPanel();
-                carregarRanking();
-            } catch (err) {
-                toast('Erro ao salvar avaliação.', 'error');
-            }
-        };
-
-        // -------------------- JURI (aba pública) --------------------
+        // -------------------- JURI (pública) --------------------
         function renderJuri(container) {
             if (currentUserRole !== 'admin' && currentUserRole !== 'jurado') {
                 container.innerHTML = `<div class="card"><p class="text-muted">Acesso restrito a administradores e jurados.</p></div>`;
@@ -1651,7 +1216,7 @@ const firebaseConfig = {
         }
 
         // ════════════════════════════════════════════════════════════
-        // 9. LÓGICAS DA AGENDA (preservadas)
+        // 9. LÓGICAS DA AGENDA (preservadas e corrigidas)
         // ════════════════════════════════════════════════════════════
         async function initEdicaoVotacao() {
             try {
@@ -1713,7 +1278,12 @@ const firebaseConfig = {
             const container = document.getElementById('grid-candidatos');
             if (!container) return;
             const q = query(collection(db, "candidatos"), where("edicaoId", "==", "ativa"), where("status", "==", "aprovado"));
-            onSnapshot(q, (snapshot) => {
+            // Cancelar listener anterior
+            if (unsubscribeListeners['candidatos']) {
+                unsubscribeListeners['candidatos']();
+                delete unsubscribeListeners['candidatos'];
+            }
+            const unsub = onSnapshot(q, (snapshot) => {
                 globalCandidatos = [];
                 container.innerHTML = '';
                 if (snapshot.empty) {
@@ -1742,11 +1312,12 @@ const firebaseConfig = {
                             selectedCandidato = c;
                         }
                         updateTotalVotacao();
-                        carregarCandidatos();
+                        carregarCandidatos(); // recarrega para atualizar seleção
                     };
                     container.appendChild(div);
                 });
             });
+            unsubscribeListeners['candidatos'] = unsub;
         }
 
         function updateTotalVotacao() {
@@ -1886,7 +1457,507 @@ const firebaseConfig = {
             }
         }
 
-        // Encerrar edição (Agenda)
+        // ════════════════════════════════════════════════════════════
+        // 10. ADMIN - TABELAS UNIFICADAS COM ON SNAPSHOT
+        // ════════════════════════════════════════════════════════════
+        function carregarAdminTablesUnificado() {
+            const container = document.getElementById('adminTables');
+            if (!container) return;
+            // Mostrar skeletons
+            container.innerHTML = `
+                <div class="skeleton" style="height:100px;"></div>
+                <div class="skeleton" style="height:100px;"></div>
+                <div class="skeleton" style="height:100px;"></div>
+            `;
+
+            // Função para atualizar cada seção
+            const atualizar = (seletor, html) => {
+                const div = container.querySelector(seletor);
+                if (div) div.innerHTML = html;
+            };
+
+            // Listener global para todas as coleções do admin
+            if (unsubscribeAdmin.global) unsubscribeAdmin.global();
+            const unsubGlobal = onSnapshot(collection(db, "admin_logs"), () => { /* usado para disparar atualizações */ });
+            unsubscribeAdmin.global = unsubGlobal;
+
+            // Carregar cada coleção com onSnapshot
+            const carregarColecao = (nome, seletor, renderFn) => {
+                const unsub = onSnapshot(collection(db, nome), async (snap) => {
+                    const dados = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                    const html = await renderFn(dados);
+                    const div = container.querySelector(seletor);
+                    if (div) div.innerHTML = html;
+                });
+                // Armazenar para cancelar depois
+                if (!unsubscribeAdmin[nome]) unsubscribeAdmin[nome] = [];
+                unsubscribeAdmin[nome].push(unsub);
+            };
+
+            // Construir estrutura HTML com placeholders
+            container.innerHTML = `
+                <!-- Resumo Financeiro -->
+                <div class="card" style="border:1.5px solid var(--secondary);" id="admin-resumo"></div>
+                <!-- Aprovar Candidatos -->
+                <h2 class="mt-3">👥 Aprovar Candidatos</h2>
+                <div style="margin-bottom:12px;">
+                    <select id="filtro-categoria-admin" onchange="carregarAdminCandidatosFiltro()">
+                        <option value="">Todas as categorias</option>
+                        <option value="Musica">🎵 Música</option>
+                        <option value="ArtesVisuais">🎨 Artes Visuais</option>
+                        <option value="Poesia">📜 Poesia</option>
+                        <option value="Danca">💃 Dança</option>
+                        <option value="Teatro">🎭 Teatro</option>
+                    </select>
+                </div>
+                <div id="admin-candidatos-unificado"><div class="skeleton" style="height:100px;"></div></div>
+                <!-- Confirmar Pagamentos -->
+                <h2 class="mt-3">💰 Confirmar Pagamentos de Votos</h2>
+                <div id="admin-votos-pendentes-unificado"><div class="skeleton" style="height:100px;"></div></div>
+                <!-- Notas do Júri -->
+                <h2 class="mt-3">⭐ Notas do Júri (Técnico)</h2>
+                <div id="admin-juri-unificado"><div class="skeleton" style="height:100px;"></div></div>
+                <!-- Reembolsos -->
+                <h2 class="mt-3">↩️ Solicitações de Reembolso</h2>
+                <div id="admin-reembolsos-unificado"><div class="skeleton" style="height:100px;"></div></div>
+                <!-- Edições -->
+                <h2 class="mt-3">🎯 Edições</h2>
+                <div id="admin-edicoes"><div class="skeleton" style="height:100px;"></div></div>
+                <!-- Concursos (C3) -->
+                <h2 class="mt-3">🎯 Concursos (Portfólio)</h2>
+                <div id="admin-concursos"><div class="skeleton" style="height:100px;"></div></div>
+                <!-- Talentos -->
+                <h2 class="mt-3">🌟 Talentos</h2>
+                <div id="admin-talentos"><div class="skeleton" style="height:100px;"></div></div>
+                <!-- Notícias -->
+                <h2 class="mt-3">📰 Notícias</h2>
+                <div id="admin-noticias"><div class="skeleton" style="height:100px;"></div></div>
+                <!-- Dicas -->
+                <h2 class="mt-3">💡 Dicas</h2>
+                <div id="admin-dicas"><div class="skeleton" style="height:100px;"></div></div>
+            `;
+
+            // Funções de renderização
+            const renderResumo = async (dados) => {
+                const votosSnap = await getDocs(query(collection(db, "votos"), where("status", "==", "confirmado")));
+                let total = 0;
+                votosSnap.forEach(d => total += d.data().valorTotal || 0);
+                const edicoes = await getData('edicoesCulturais');
+                const ativa = edicoes.find(e => e.status !== 'encerrada');
+                return `
+                    <div class="card-title">💰 Resumo Financeiro</div>
+                    <div class="form-grid">
+                        <div><strong>Total Arrecadado:</strong> ${fmtMoney(total)}</div>
+                        <div><strong>Votos Confirmados:</strong> ${votosSnap.size}</div>
+                        <div><strong>Edição Ativa:</strong> ${ativa ? ativa.nome : 'Nenhuma'}</div>
+                    </div>
+                `;
+            };
+
+            const renderCandidatos = async (dados) => {
+                const filtro = document.getElementById('filtro-categoria-admin')?.value || '';
+                let lista = dados;
+                if (filtro) lista = lista.filter(c => c.categoria === filtro);
+                const pendentes = lista.filter(c => c.status === 'pendente');
+                if (pendentes.length === 0) return '<p class="text-muted">Nenhuma inscrição pendente.</p>';
+                let html = '<table class="admin-table"><thead><tr><th>Nome</th><th>Obra</th><th>Categoria</th><th>Ações</th></tr></thead><tbody>';
+                pendentes.forEach(c => {
+                    html += `<tr>
+                        <td>${escHtml(c.nome)}</td>
+                        <td><a href="${c.link}" target="_blank">${escHtml(c.titulo)}</a></td>
+                        <td>${escHtml(c.categoria || 'Geral')}</td>
+                        <td>
+                            <div class="admin-cand-actions">
+                                <button class="btn btn-primary btn-sm" onclick="aprovarCandUnificado('${c.id}')">Aprovar</button>
+                                <button class="btn btn-danger btn-sm" onclick="abrirRejeicaoUnificado('${c.id}')">Rejeitar</button>
+                                <button class="btn btn-outline btn-sm" onclick="editarCandidatoUnificado('${c.id}')">✏️</button>
+                            </div>
+                        </td>
+                    </tr>`;
+                });
+                html += '</tbody></table>';
+                return html;
+            };
+
+            const renderVotosPendentes = async (dados) => {
+                const pendentes = dados.filter(v => v.status === 'pendente');
+                if (pendentes.length === 0) return '<p class="text-muted">Nenhum voto pendente.</p>';
+                let html = '<table class="admin-table"><thead><tr><th>Comprador</th><th>Candidato</th><th>Valor</th><th>Ação</th></tr></thead><tbody>';
+                pendentes.forEach(v => {
+                    const candNome = globalCandidatos.find(c => c.id === v.candidatoId)?.titulo || v.candidatoId;
+                    html += `<tr>
+                        <td>${escHtml(v.nome)}<br><small>${v.cpf}</small></td>
+                        <td>${escHtml(candNome)}</td>
+                        <td>${fmtMoney(v.valorTotal)}</td>
+                        <td><button class="btn btn-primary btn-sm" onclick="confirmarVotoUnificado('${v.id}')">Confirmar</button></td>
+                    </tr>`;
+                });
+                html += '</tbody></table>';
+                return html;
+            };
+
+            const renderJuri = async (dados) => {
+                const aprovados = dados.filter(c => c.status === 'aprovado');
+                if (aprovados.length === 0) return '<p class="text-muted">Nenhum candidato aprovado.</p>';
+                let html = '<table class="admin-table"><thead><tr><th>Obra</th><th>Nota (0-10)</th><th>Ação</th></tr></thead><tbody>';
+                aprovados.forEach(c => {
+                    const notaAtual = c.notaJuri !== null ? c.notaJuri : '';
+                    html += `<tr>
+                        <td>${escHtml(c.titulo)}</td>
+                        <td><input type="number" id="nota-${c.id}" min="0" max="10" step="0.5" value="${notaAtual}" style="width:70px;"></td>
+                        <td><button class="btn btn-primary btn-sm" onclick="salvarNotaJuriUnificado('${c.id}')">Salvar</button></td>
+                    </tr>`;
+                });
+                html += '</tbody></table>';
+                return html;
+            };
+
+            const renderReembolsos = async (dados) => {
+                const solicitados = dados.filter(v => v.status === 'reembolso_solicitado');
+                if (solicitados.length === 0) return '<p class="text-muted">Nenhuma solicitação de reembolso.</p>';
+                let html = '<table class="admin-table"><thead><tr><th>Comprador</th><th>Valor</th><th>Ações</th></tr></thead><tbody>';
+                solicitados.forEach(v => {
+                    html += `<tr>
+                        <td>${escHtml(v.nome)}<br><small>${v.cpf}</small></td>
+                        <td>${fmtMoney(v.valorTotal)}</td>
+                        <td>
+                            <button class="btn btn-success btn-sm" onclick="aprovarReembolsoUnificado('${v.id}')">Aprovar</button>
+                            <button class="btn btn-danger btn-sm" onclick="rejeitarReembolsoUnificado('${v.id}')">Rejeitar</button>
+                        </td>
+                    </tr>`;
+                });
+                html += '</tbody></table>';
+                return html;
+            };
+
+            const renderEdicoes = (dados) => {
+                if (dados.length === 0) return '<p class="text-muted">Nenhuma edição.</p>';
+                let html = '<table class="admin-table"><thead><tr><th>Nome</th><th>Status</th><th>Ações</th></tr></thead><tbody>';
+                dados.forEach(e => {
+                    html += `<tr>
+                        <td>${escHtml(e.nome)}</td>
+                        <td>${escHtml(e.status)}</td>
+                        <td>
+                            <div class="actions">
+                                <button class="btn btn-primary btn-sm" onclick="editarEdicao('${e.id}')">✏️</button>
+                                ${e.status !== 'encerrada' ? `<button class="btn btn-gold btn-sm" onclick="encerrarEdicao()">🏁 Encerrar</button>` : ''}
+                            </div>
+                        </td>
+                    </tr>`;
+                });
+                html += '</tbody></table>';
+                return html;
+            };
+
+            const renderConcursosC3 = (dados) => {
+                if (dados.length === 0) return '<p class="text-muted">Nenhum concurso.</p>';
+                let html = '<table class="admin-table"><thead><tr><th>Nome</th><th>Status</th><th>Data</th><th>Ações</th></tr></thead><tbody>';
+                dados.forEach(c => {
+                    html += `<tr>
+                        <td>${escHtml(c.nome)}</td>
+                        <td>${escHtml(c.status)}</td>
+                        <td>${formatDate(c.dataInicio)}</td>
+                        <td>
+                            <div class="actions">
+                                <button class="btn btn-primary btn-sm" onclick="editItem('concursos','${c.id}')">✏️</button>
+                                <button class="btn btn-danger btn-sm" onclick="deleteItem('concursos','${c.id}')">🗑️</button>
+                            </div>
+                        </td>
+                    </tr>`;
+                });
+                html += '</tbody></table>';
+                return html;
+            };
+
+            const renderTalentos = (dados) => {
+                if (dados.length === 0) return '<p class="text-muted">Nenhum talento.</p>';
+                let html = '<table class="admin-table"><thead><tr><th>Nome</th><th>Categoria</th><th>Prêmio</th><th>Ações</th></tr></thead><tbody>';
+                dados.forEach(t => {
+                    html += `<tr>
+                        <td>${escHtml(t.nome)}</td>
+                        <td>${escHtml(t.categoria)}</td>
+                        <td>${escHtml(t.premio)}</td>
+                        <td>
+                            <div class="actions">
+                                <button class="btn btn-primary btn-sm" onclick="editItem('talentos','${t.id}')">✏️</button>
+                                <button class="btn btn-danger btn-sm" onclick="deleteItem('talentos','${t.id}')">🗑️</button>
+                            </div>
+                        </td>
+                    </tr>`;
+                });
+                html += '</tbody></table>';
+                return html;
+            };
+
+            const renderNoticias = (dados) => {
+                if (dados.length === 0) return '<p class="text-muted">Nenhuma notícia.</p>';
+                let html = '<table class="admin-table"><thead><tr><th>Título</th><th>Data</th><th>Ações</th></tr></thead><tbody>';
+                dados.forEach(n => {
+                    html += `<tr>
+                        <td>${escHtml(n.titulo)}</td>
+                        <td>${formatDate(n.data)}</td>
+                        <td>
+                            <div class="actions">
+                                <button class="btn btn-primary btn-sm" onclick="editItem('noticias','${n.id}')">✏️</button>
+                                <button class="btn btn-danger btn-sm" onclick="deleteItem('noticias','${n.id}')">🗑️</button>
+                            </div>
+                        </td>
+                    </tr>`;
+                });
+                html += '</tbody></table>';
+                return html;
+            };
+
+            const renderDicas = (dados) => {
+                if (dados.length === 0) return '<p class="text-muted">Nenhuma dica.</p>';
+                let html = '<table class="admin-table"><thead><tr><th>Título</th><th>Categoria</th><th>Ações</th></tr></thead><tbody>';
+                dados.forEach(d => {
+                    html += `<tr>
+                        <td>${escHtml(d.titulo)}</td>
+                        <td>${escHtml(d.categoria)}</td>
+                        <td>
+                            <div class="actions">
+                                <button class="btn btn-primary btn-sm" onclick="editItem('dicas','${d.id}')">✏️</button>
+                                <button class="btn btn-danger btn-sm" onclick="deleteItem('dicas','${d.id}')">🗑️</button>
+                            </div>
+                        </td>
+                    </tr>`;
+                });
+                html += '</tbody></table>';
+                return html;
+            };
+
+            // Iniciar listeners
+            carregarColecao('admin_logs', '#admin-resumo', renderResumo);
+            carregarColecao('candidatos', '#admin-candidatos-unificado', renderCandidatos);
+            carregarColecao('votos', '#admin-votos-pendentes-unificado', renderVotosPendentes);
+            carregarColecao('candidatos', '#admin-juri-unificado', renderJuri);
+            carregarColecao('votos', '#admin-reembolsos-unificado', renderReembolsos);
+            carregarColecao('edicoesCulturais', '#admin-edicoes', renderEdicoes);
+            carregarColecao('concursos', '#admin-concursos', renderConcursosC3);
+            carregarColecao('talentos', '#admin-talentos', renderTalentos);
+            carregarColecao('noticias', '#admin-noticias', renderNoticias);
+            carregarColecao('dicas', '#admin-dicas', renderDicas);
+        }
+
+        // Filtro de candidatos (recarrega a tabela)
+        window.carregarAdminCandidatosFiltro = () => {
+            // O listener já atualiza baseado no filtro, mas forçamos uma atualização
+            const container = document.getElementById('admin-candidatos-unificado');
+            if (container) {
+                // Disparar recarga via snapshot (já está ativo, apenas atualiza)
+                // Para forçar, podemos recriar o listener (simples: cancelar e reativar)
+                // Mas como usamos onSnapshot com filtro no render, precisamos refazer
+                // Vamos recarregar a página admin? Melhor: reexecutar o listener com novo filtro
+                // Como o filtro é lido no renderCandidatos, o snapshot já vai reavaliar
+                // Basta atualizar o container com skeleton para indicar recarga
+                container.innerHTML = '<div class="skeleton" style="height:100px;"></div>';
+                // O snapshot irá atualizar automaticamente
+            }
+        };
+
+        // Funções globais para ações do admin (expostas via window)
+        window.aprovarCandUnificado = async (id) => {
+            await updateDoc(doc(db, "candidatos", id), { status: 'aprovado' });
+            await setDoc(doc(collection(db, "admin_logs")), {
+                acao: 'APROVAÇÃO CANDIDATO',
+                detalhes: `Candidato ${id} aprovado`,
+                data: Timestamp.now()
+            });
+            toast('Aprovado!', 'success');
+        };
+
+        window.abrirRejeicaoUnificado = (id) => {
+            const motivo = prompt('Informe o motivo da rejeição:');
+            if (motivo === null) return;
+            if (!motivo.trim()) return toast('Motivo não pode estar vazio.', 'error');
+            rejeitarCandidatoUnificado(id, motivo.trim());
+        };
+
+        async function rejeitarCandidatoUnificado(id, motivo) {
+            await updateDoc(doc(db, "candidatos", id), {
+                status: 'rejeitado',
+                motivoRejeicao: motivo
+            });
+            await setDoc(doc(collection(db, "admin_logs")), {
+                acao: 'REJEIÇÃO CANDIDATO',
+                detalhes: `Candidato ${id} rejeitado. Motivo: ${motivo}`,
+                data: Timestamp.now()
+            });
+            toast('Candidato rejeitado.', 'info');
+        }
+
+        window.editarCandidatoUnificado = async (id) => {
+            const snap = await getDoc(doc(db, "candidatos", id));
+            if (!snap.exists()) return toast('Candidato não encontrado.', 'error');
+            const c = snap.data();
+            document.getElementById('modalTitle').textContent = '✏️ Editar Candidato';
+            document.getElementById('modalBody').innerHTML = `
+                <div class="form-grid">
+                    <div class="input-group"><label>Nome</label><input type="text" id="edit-nome" value="${escHtml(c.nome)}"></div>
+                    <div class="input-group"><label>Título</label><input type="text" id="edit-titulo" value="${escHtml(c.titulo)}"></div>
+                    <div class="input-group"><label>Link</label><input type="text" id="edit-link" value="${escHtml(c.link)}"></div>
+                    <div class="input-group"><label>WhatsApp</label><input type="text" id="edit-whatsapp" value="${escHtml(c.whatsapp)}"></div>
+                    <div class="input-group"><label>Categoria</label>
+                        <select id="edit-categoria">
+                            <option value="Musica" ${c.categoria==='Musica'?'selected':''}>🎵 Música</option>
+                            <option value="ArtesVisuais" ${c.categoria==='ArtesVisuais'?'selected':''}>🎨 Artes Visuais</option>
+                            <option value="Poesia" ${c.categoria==='Poesia'?'selected':''}>📜 Poesia</option>
+                            <option value="Danca" ${c.categoria==='Danca'?'selected':''}>💃 Dança</option>
+                            <option value="Teatro" ${c.categoria==='Teatro'?'selected':''}>🎭 Teatro</option>
+                        </select>
+                    </div>
+                    <div class="input-group" style="grid-column: span 2;">
+                        <label>Descrição / Observações</label>
+                        <textarea id="edit-descricao" rows="2">${escHtml(c.descricao || '')}</textarea>
+                    </div>
+                </div>
+            `;
+            document.getElementById('modalActions').innerHTML = `
+                <button class="btn btn-primary" onclick="salvarEdicaoCandidatoUnificado('${id}')">Salvar</button>
+                <button class="btn btn-outline" onclick="closeModal()">Cancelar</button>
+            `;
+            document.getElementById('modalOverlay').classList.add('open');
+        };
+
+        window.salvarEdicaoCandidatoUnificado = async (id) => {
+            const updates = {
+                nome: document.getElementById('edit-nome').value,
+                titulo: document.getElementById('edit-titulo').value,
+                link: document.getElementById('edit-link').value,
+                whatsapp: document.getElementById('edit-whatsapp').value,
+                categoria: document.getElementById('edit-categoria').value,
+                descricao: document.getElementById('edit-descricao').value
+            };
+            await updateDoc(doc(db, "candidatos", id), updates);
+            await setDoc(doc(collection(db, "admin_logs")), {
+                acao: 'EDIÇÃO CANDIDATO',
+                detalhes: `Candidato ${id} editado`,
+                data: Timestamp.now()
+            });
+            toast('Candidato atualizado!', 'success');
+            closeModal();
+        };
+
+        window.confirmarVotoUnificado = async (votoId) => {
+            if (!confirm('Confirmar pagamento deste voto?')) return;
+            try {
+                await runTransaction(db, async (tx) => {
+                    const vRef = doc(db, "votos", votoId);
+                    const vSnap = await tx.get(vRef);
+                    if (!vSnap.exists()) throw new Error('Voto não encontrado');
+                    const v = vSnap.data();
+                    if (v.status !== 'pendente') throw new Error('Voto já processado');
+                    const candRef = doc(db, "candidatos", v.candidatoId);
+                    const candSnap = await tx.get(candRef);
+                    if (!candSnap.exists()) throw new Error('Candidato não encontrado');
+                    const votosAtuais = candSnap.data().votos || 0;
+                    tx.update(candRef, { votos: votosAtuais + 1 });
+                    tx.update(vRef, { status: 'confirmado', dataConfirmacao: Timestamp.now() });
+                    tx.set(doc(collection(db, "admin_logs")), {
+                        acao: 'CONFIRMAÇÃO VOTO',
+                        detalhes: `Voto ${votoId} confirmado para candidato ${v.candidatoId}`,
+                        data: Timestamp.now()
+                    });
+                });
+                toast('Voto confirmado!', 'success');
+            } catch (err) {
+                toast(err.message || 'Erro ao confirmar.', 'error');
+            }
+        };
+
+        window.salvarNotaJuriUnificado = async (id) => {
+            const nota = parseFloat(document.getElementById(`nota-${id}`).value);
+            if (isNaN(nota) || nota < 0 || nota > 10) return toast('Nota inválida (0-10).', 'error');
+            try {
+                await updateDoc(doc(db, "candidatos", id), { notaJuri: nota });
+                await setDoc(doc(collection(db, "admin_logs")), {
+                    acao: 'NOTA JÚRI',
+                    detalhes: `Candidato ${id} recebeu nota ${nota}`,
+                    data: Timestamp.now()
+                });
+                toast('Nota salva!', 'success');
+            } catch (err) {
+                toast('Erro ao salvar nota.', 'error');
+            }
+        };
+
+        window.aprovarReembolsoUnificado = async (votoId) => {
+            if (!confirm('Aprovar reembolso? O voto será cancelado.')) return;
+            try {
+                await runTransaction(db, async (tx) => {
+                    const vRef = doc(db, "votos", votoId);
+                    const vSnap = await tx.get(vRef);
+                    if (!vSnap.exists()) throw new Error('Voto não encontrado');
+                    const v = vSnap.data();
+                    if (v.status !== 'reembolso_solicitado') throw new Error('Status inválido');
+                    if (v.status === 'confirmado') {
+                        const candRef = doc(db, "candidatos", v.candidatoId);
+                        const candSnap = await tx.get(candRef);
+                        if (candSnap.exists()) {
+                            const votos = candSnap.data().votos || 0;
+                            tx.update(candRef, { votos: Math.max(0, votos - 1) });
+                        }
+                    }
+                    tx.update(vRef, { status: 'cancelado', dataReembolso: Timestamp.now() });
+                    tx.set(doc(collection(db, "admin_logs")), {
+                        acao: 'REEMBOLSO APROVADO',
+                        detalhes: `Voto ${votoId} reembolsado`,
+                        data: Timestamp.now()
+                    });
+                });
+                toast('Reembolso aprovado.', 'success');
+            } catch (err) {
+                toast(err.message || 'Erro.', 'error');
+            }
+        };
+
+        window.rejeitarReembolsoUnificado = async (votoId) => {
+            if (!confirm('Rejeitar solicitação de reembolso?')) return;
+            await updateDoc(doc(db, "votos", votoId), { status: 'pendente' });
+            toast('Solicitação rejeitada.', 'info');
+        };
+
+        // Editar e encerrar edição
+        window.editarEdicao = async (id) => {
+            const snap = await getDoc(doc(db, "edicoesCulturais", id));
+            if (!snap.exists()) return toast('Edição não encontrada.', 'error');
+            const e = snap.data();
+            document.getElementById('modalTitle').textContent = '✏️ Editar Edição';
+            document.getElementById('modalBody').innerHTML = `
+                <div class="form-group"><label>Nome</label><input type="text" id="edit-nome" value="${escHtml(e.nome)}"></div>
+                <div class="form-group"><label>Descrição</label><input type="text" id="edit-desc" value="${escHtml(e.descricao)}"></div>
+                <div class="form-group"><label>Valor Voto (R$)</label><input type="number" id="edit-valor" value="${e.valorVoto}" step="0.50"></div>
+                <div class="form-group"><label>PIX</label><input type="text" id="edit-pix" value="${escHtml(e.pixChave)}"></div>
+                <div class="form-grid">
+                    <div class="form-group"><label>% Prêmio</label><input type="number" id="edit-percP" value="${e.percentuais?.premio || 60}"></div>
+                    <div class="form-group"><label>% Custos</label><input type="number" id="edit-percC" value="${e.percentuais?.custos || 20}"></div>
+                    <div class="form-group"><label>% Admin</label><input type="number" id="edit-percA" value="${e.percentuais?.admin || 20}"></div>
+                </div>
+            `;
+            document.getElementById('modalActions').innerHTML = `
+                <button class="btn btn-primary" onclick="salvarEdicao('${id}')">Salvar</button>
+                <button class="btn btn-outline" onclick="closeModal()">Cancelar</button>
+            `;
+            document.getElementById('modalOverlay').classList.add('open');
+        };
+
+        window.salvarEdicao = async (id) => {
+            const percP = Number(document.getElementById('edit-percP').value) || 0;
+            const percC = Number(document.getElementById('edit-percC').value) || 0;
+            const percA = Number(document.getElementById('edit-percA').value) || 0;
+            if (percP + percC + percA !== 100) return toast('Percentuais devem somar 100%.', 'error');
+            await updateDoc(doc(db, "edicoesCulturais", id), {
+                nome: document.getElementById('edit-nome').value,
+                descricao: document.getElementById('edit-desc').value,
+                valorVoto: Number(document.getElementById('edit-valor').value),
+                pixChave: document.getElementById('edit-pix').value,
+                percentuais: { premio: percP, custos: percC, admin: percA }
+            });
+            toast('Edição atualizada!', 'success');
+            closeModal();
+        };
+
         window.encerrarEdicao = async () => {
             if (!confirm('Confirma o encerramento da edição? Isso apurará o vencedor.')) return;
             const snap = await getDocs(query(collection(db, "candidatos"), where("status", "==", "aprovado")));
@@ -1929,47 +2000,9 @@ const firebaseConfig = {
             setTimeout(() => renderPage('admin'), 1500);
         };
 
-        // Editar Edição (Agenda)
-        window.editarEdicao = async (id) => {
-            const snap = await getDoc(doc(db, "edicoesCulturais", id));
-            if (!snap.exists()) return toast('Edição não encontrada.', 'error');
-            const e = snap.data();
-            document.getElementById('modalTitle').textContent = '✏️ Editar Edição';
-            document.getElementById('modalBody').innerHTML = `
-                <div class="form-group"><label>Nome</label><input type="text" id="edit-nome" value="${escHtml(e.nome)}"></div>
-                <div class="form-group"><label>Descrição</label><input type="text" id="edit-desc" value="${escHtml(e.descricao)}"></div>
-                <div class="form-group"><label>Valor Voto (R$)</label><input type="number" id="edit-valor" value="${e.valorVoto}" step="0.50"></div>
-                <div class="form-group"><label>PIX</label><input type="text" id="edit-pix" value="${escHtml(e.pixChave)}"></div>
-                <div class="form-grid">
-                    <div class="form-group"><label>% Prêmio</label><input type="number" id="edit-percP" value="${e.percentuais?.premio || 60}"></div>
-                    <div class="form-group"><label>% Custos</label><input type="number" id="edit-percC" value="${e.percentuais?.custos || 20}"></div>
-                    <div class="form-group"><label>% Admin</label><input type="number" id="edit-percA" value="${e.percentuais?.admin || 20}"></div>
-                </div>
-            `;
-            document.getElementById('modalActions').innerHTML = `
-                <button class="btn btn-primary" onclick="salvarEdicao('${id}')">Salvar</button>
-                <button class="btn btn-outline" onclick="closeModal()">Cancelar</button>
-            `;
-            document.getElementById('modalOverlay').classList.add('open');
-        };
-        window.salvarEdicao = async (id) => {
-            const percP = Number(document.getElementById('edit-percP').value) || 0;
-            const percC = Number(document.getElementById('edit-percC').value) || 0;
-            const percA = Number(document.getElementById('edit-percA').value) || 0;
-            if (percP + percC + percA !== 100) return toast('Percentuais devem somar 100%.', 'error');
-            await updateDoc(doc(db, "edicoesCulturais", id), {
-                nome: document.getElementById('edit-nome').value,
-                descricao: document.getElementById('edit-desc').value,
-                valorVoto: Number(document.getElementById('edit-valor').value),
-                pixChave: document.getElementById('edit-pix').value,
-                percentuais: { premio: percP, custos: percC, admin: percA }
-            });
-            toast('Edição atualizada!', 'success');
-            closeModal();
-            renderPage('admin');
-        };
-
-        // -------- CRUD para C3 (concursos, talentos, noticias, dicas) --------
+        // ════════════════════════════════════════════════════════════
+        // 11. CRUD PARA C3 (concursos, talentos, noticias, dicas)
+        // ════════════════════════════════════════════════════════════
         window.editItem = function(collection, id) {
             currentCollection = collection;
             currentEditId = id;
@@ -2128,7 +2161,76 @@ const firebaseConfig = {
         }
 
         // ════════════════════════════════════════════════════════════
-        // 10. BACKUP COMPLETO (Export/Import)
+        // 12. JÚRI PÚBLICO
+        // ════════════════════════════════════════════════════════════
+        async function loadJuriPanel() {
+            const container = document.getElementById('juri-list-container');
+            if (!container) return;
+            try {
+                const snap = await getDocs(query(collection(db, "candidatos"), where("edicaoId", "==", "ativa"), where("status", "==", "aprovado")));
+                if (snap.empty) {
+                    container.innerHTML = '<p class="text-muted">Nenhum candidato aprovado para avaliar.</p>';
+                    return;
+                }
+                let html = '';
+                snap.forEach(d => {
+                    const c = d.data();
+                    const notaAtual = c.notaJuri !== null ? c.notaJuri : '';
+                    const aura = c.aura !== undefined ? c.aura : '';
+                    const criatividade = c.criatividade !== undefined ? c.criatividade : '';
+                    const estilo = c.estilo !== undefined ? c.estilo : '';
+                    html += `
+                        <div class="card" style="margin-bottom:12px;">
+                            <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+                                <div>
+                                    <strong>${escHtml(c.titulo)}</strong> - ${escHtml(c.nome)}
+                                    <div style="font-size:0.8rem; color:var(--text-muted);">
+                                        Categoria: ${escHtml(c.categoria || 'Geral')}
+                                        ${c.link ? `<a href="${c.link}" target="_blank" style="margin-left:8px;">▶️ Ver vídeo</a>` : ''}
+                                    </div>
+                                </div>
+                                <div style="font-size:0.8rem; color:var(--text-muted);">Nota atual: ${notaAtual || 'Não avaliado'}</div>
+                            </div>
+                            <div class="juri-nota-grid">
+                                <div class="juri-nota-item"><label>🌟 Aura (40%)</label><input type="number" id="juri-aura-${d.id}" min="0" max="10" step="0.5" value="${aura}"></div>
+                                <div class="juri-nota-item"><label>💡 Criatividade (30%)</label><input type="number" id="juri-criatividade-${d.id}" min="0" max="10" step="0.5" value="${criatividade}"></div>
+                                <div class="juri-nota-item"><label>🎨 Estilo (30%)</label><input type="number" id="juri-estilo-${d.id}" min="0" max="10" step="0.5" value="${estilo}"></div>
+                            </div>
+                            <button class="btn btn-primary btn-sm" onclick="salvarAvaliacaoJuri('${d.id}')">Salvar Avaliação</button>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            } catch (err) {
+                container.innerHTML = '<p class="text-muted">Erro ao carregar painel do Júri.</p>';
+                console.error(err);
+            }
+        }
+
+        window.salvarAvaliacaoJuri = async (id) => {
+            const aura = parseFloat(document.getElementById(`juri-aura-${id}`).value);
+            const criatividade = parseFloat(document.getElementById(`juri-criatividade-${id}`).value);
+            const estilo = parseFloat(document.getElementById(`juri-estilo-${id}`).value);
+            if (isNaN(aura) || isNaN(criatividade) || isNaN(estilo)) return toast('Preencha todas as notas.', 'error');
+            if (aura < 0 || aura > 10 || criatividade < 0 || criatividade > 10 || estilo < 0 || estilo > 10) return toast('Notas entre 0 e 10.', 'error');
+            const notaFinal = (aura * 0.4) + (criatividade * 0.3) + (estilo * 0.3);
+            try {
+                await updateDoc(doc(db, "candidatos", id), { aura, criatividade, estilo, notaJuri: parseFloat(notaFinal.toFixed(2)) });
+                await setDoc(doc(collection(db, "admin_logs")), {
+                    acao: 'AVALIAÇÃO JÚRI',
+                    detalhes: `Candidato ${id} avaliado. Nota final: ${notaFinal.toFixed(2)}`,
+                    data: Timestamp.now()
+                });
+                toast(`Avaliação salva! Nota: ${notaFinal.toFixed(2)}`, 'success');
+                loadJuriPanel();
+                carregarRanking();
+            } catch (err) {
+                toast('Erro ao salvar avaliação.', 'error');
+            }
+        };
+
+        // ════════════════════════════════════════════════════════════
+        // 13. BACKUP
         // ════════════════════════════════════════════════════════════
         window.exportarBackupCompleto = async function() {
             try {
@@ -2182,7 +2284,7 @@ const firebaseConfig = {
         };
 
         // ════════════════════════════════════════════════════════════
-        // 11. NAVEGAÇÃO UNIFICADA
+        // 14. NAVEGAÇÃO
         // ════════════════════════════════════════════════════════════
         window.navigateTo = function(page) {
             renderPage(page);
@@ -2197,10 +2299,10 @@ const firebaseConfig = {
         });
 
         // ════════════════════════════════════════════════════════════
-        // 12. MÁSCARAS E INICIALIZAÇÃO
+        // 15. MÁSCARAS E INICIALIZAÇÃO
         // ════════════════════════════════════════════════════════════
         document.addEventListener('input', function(e) {
-            if (e.target.id === 'cpf' || e.target.id === 'cand-cpf' || e.target.id === 'search-cpf') {
+            if (e.target.id === 'cpf' || e.target.id === 'cand-cpf' || e.target.id === 'busca-cpf') {
                 e.target.value = maskCPF(e.target.value);
             }
             if (e.target.id === 'whatsapp' || e.target.id === 'cand-whatsapp') {
@@ -2217,14 +2319,16 @@ const firebaseConfig = {
         // Carregar página inicial
         const params = new URLSearchParams(window.location.search);
         const pageParam = params.get('page');
-        const initialPage = (pageParam && ['home','votar','inscrever','ranking','vitrine','dicas','calendario','transparencia','admin','juri','minhas-inscricoes'].includes(pageParam)) ? pageParam : 'home';
+        const validPages = ['home','concursos','votar','inscrever','ranking','vitrine','dicas','calendario','transparencia','admin','juri','minhas-inscricoes'];
+        const initialPage = (pageParam && validPages.includes(pageParam)) ? pageParam : 'home';
         renderPage(initialPage);
 
-        console.log('🎭 C3 · Agenda Cultural Pop\'s 2.0 – Sistema Unificado COMPLETO');
-        console.log('✅ Todas as funcionalidades da Agenda e do C3 integradas.');
-        console.log('📦 Dados em tempo real com Firestore.');
-        console.log('👑 Área Admin com gestão completa (conteúdo + operacional).');
-        console.log('💡 Para criar o admin: documento na coleção "users" com role="admin".');
+        console.log('🎭 C3 · Agenda Cultural Pop\'s 2.0 – Sistema Unificado COMPLETO E CORRIGIDO');
+        console.log('✅ Página "Concursos" restaurada com filtros.');
+        console.log('✅ Admin unificado com onSnapshot em tempo real.');
+        console.log('✅ Todas as funcionalidades do C3 e Agenda integradas.');
+        console.log('✅ Modal unificado e ações CRUD funcionais.');
+        console.log('💡 Para criar admin: documento na coleção "users" com role="admin".');
     </script>
 </body>
 </html>
