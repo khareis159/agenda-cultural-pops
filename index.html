@@ -712,7 +712,14 @@
             const adminLink = document.getElementById('adminLink');
             const juriLink = document.getElementById('juriLink');
             if (user) {
-                currentUserRole = await fetchUserRole(user.uid);
+
+// Fallback para testes: se o email for c4brbb@gmail.com, força admin
+if (user.email === 'c4brbb@gmail.com') {
+    currentUserRole = 'admin';
+} else {
+    currentUserRole = await fetchUserRole(user.uid);
+}
+             
                 authLink.textContent = `👤 ${user.email} (${currentUserRole})`;
                 authLink.onclick = (e) => { e.preventDefault(); logoutUser(); };
                 if (currentUserRole === 'admin' || currentUserRole === 'jurado') {
