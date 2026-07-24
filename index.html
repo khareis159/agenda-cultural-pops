@@ -1509,6 +1509,21 @@ function renderAdmin(container) {
 
             // Construir estrutura HTML com placeholders
             container.innerHTML = `
+
+                <!-- ========================================================== -->
+                <!-- 🤖 PAINEL DE AVALIAÇÃO COM IA (NOVO)                       -->
+                <!-- ========================================================== -->
+                <div class="card" style="border:2px solid var(--secondary);">
+                    <div class="card-title">🤖 Avaliação Automática com IA</div>
+                    <p class="text-muted">Use Inteligência Artificial para avaliar os candidatos aprovados. As IAs analisam técnica, criatividade e impacto cultural.</p>
+                    <div style="display:flex; gap:12px; flex-wrap:wrap; margin:12px 0;">
+                        <button class="btn btn-secondary" id="btn-avaliar-ia">🤖 Avaliar com IA</button>
+                        <button class="btn btn-outline" id="btn-avaliar-todos-ia">📊 Avaliar Todos</button>
+                        <button class="btn btn-outline" id="btn-atualizar-ia">🔄 Atualizar Lista</button>
+                    </div>
+                    <div id="admin-ia-panel"><div class="skeleton" style="height:200px;"></div></div>
+                </div>
+
                 <!-- Resumo Financeiro -->
                 <div class="card" style="border:1.5px solid var(--secondary);" id="admin-resumo"></div>
                 <!-- Aprovar Candidatos -->
@@ -1740,7 +1755,13 @@ function renderAdmin(container) {
                 return html;
             };
 
+
             // Iniciar listeners
+            // Inicializar o painel IA
+            await renderizarPainelIA();
+            initIAEvents();
+
+           
             carregarColecao('admin_logs', '#admin-resumo', renderResumo);
             carregarColecao('candidatos', '#admin-candidatos-unificado', renderCandidatos);
             carregarColecao('votos', '#admin-votos-pendentes-unificado', renderVotosPendentes);
@@ -2173,6 +2194,290 @@ function renderAdmin(container) {
             return data;
         }
 
+// ============================================================
+// BUSCAR CONFIGURAÇÕES DAS IAs
+// ============================================================
+async function getIAConfig() {
+    try {
+        const docSnap = await getDoc(doc(db, 'config_ia', 'config'));
+        if (!docSnap.exists()) {
+            toast('Configuração das IAs não encontrada!', 'error');
+            return null;
+        }
+        return docSnap.data();
+    } catch (error) {
+        console.error('Erro ao buscar config IA:', error);
+        toast('Erro ao carregar configurações das IAs.', 'error');
+        return null;
+    }
+}
+
+// ============================================================
+// AVALIAÇÃO COM GEMINI
+// ============================================================
+async function avaliarComGemini(obra, apiKey) {
+    const prompt = `
+Você é um jurado especializado em concursos culturais. 
+Analise a seguinte obra e atribua uma nota de 0 a 10.
+
+CRITÉRIOS DE AVALIAÇÃO:
+1. Técnica (peso 30%): domínio da forma, estrutura, qualidade técnica.
+2. Estética (peso 30%): beleza, harmonia, apelo visual/auditivo.
+3. Originalidade (peso 20%): inovação, frescor, autenticidade.
+4. Expressividade (peso 20%): emoção transmitida, impacto.
+
+OBRA:
+Título: ${obra.titulo}
+Categoria: ${obra.categoria}
+Descrição: ${obra.descricao || 'N/A'}
+Link: ${obra.link || 'N/A'}
+
+Responda APENAS com um JSON válido no formato:
+{"nota": 8.5, "parecer": "texto da avaliação"}
+`;
+
+    try {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{
+                    parts: [{ text: prompt }]
+                }],
+                generationConfig: {
+                    temperature: 0.2,
+                    maxOutputTokens: 300
+                }
+            })
+        });
+
+        const data = await response.json();
+        const text = data.candidates[0].content.parts[0].text;
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+            return JSON.parse(jsonMatch[0]);
+        }
+        throw new Error('Resposta inválida do Gemini');
+    } catch (error) {
+        console.error('Erro Gemini:', error);
+        throw error;
+    }
+}
+
+// ============================================================
+// AVALIAÇÃO COM DEEPSEEK
+// ============================================================
+async function avaliarComDeepSeek(obra, apiKey) {
+    const prompt = `
+Você é um jurado especializado em criatividade e inovação para concursos culturais.
+Analise a seguinte obra focando em ORIGINALIDADE e CRIATIVIDADE.
+
+CRITÉRIOS DE AVALIAÇÃO:
+1. Originalidade (25%): ideias inéditas, abordagem única.
+2. Criatividade (25%): uso inovador de elementos.
+3. Inventividade (25%): soluções surpreendentes, quebra de padrões.
+4. Potencial de impacto (25%): capacidade de influenciar outros artistas.
+
+OBRA:
+Título: ${obra.titulo}
+Categoria: ${obra.categoria}
+Descrição: ${obra.descricao || 'N/A'}
+Link: ${obra.link || 'N/A'}
+
+Responda APENAS com um JSON válido no formato:
+{"nota": 8.5, "parecer": "texto da avaliação"}
+`;
+
+    try {
+        const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiKey}`
+            },
+            body: JSON.stringify({
+                model: "deepseek-chat",
+                messages: [
+                    { role: "system", content: "Você é um jurado especializado em criatividade." },
+                    { role: "user", content: prompt }
+                ],
+                temperature: 0.2,
+                max_tokens: 300
+            })
+        });
+
+        const data = await response.json();
+        const text = data.choices[0].message.content;
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+            return JSON.parse(jsonMatch[0]);
+        }
+        throw new Error('Resposta inválida do DeepSeek');
+    } catch (error) {
+        console.error('Erro DeepSeek:', error);
+        throw error;
+    }
+}
+
+// ============================================================
+// AVALIAÇÃO COM QWEN
+// ============================================================
+async function avaliarComQwen(obra, apiKey) {
+    const prompt = `
+Você é um jurado especializado em análise cultural e impacto social para concursos culturais.
+Analise a seguinte obra focando em RELEVÂNCIA CULTURAL e IMPACTO SOCIAL.
+
+CRITÉRIOS DE AVALIAÇÃO:
+1. Relevância cultural (30%): conexão com temas culturais atuais.
+2. Representatividade (25%): diversidade, inclusão, vozes sub-representadas.
+3. Impacto social (25%): capacidade de gerar reflexão ou mudança.
+4. Universalidade (20%): apelo transcultural, mensagem atemporal.
+
+OBRA:
+Título: ${obra.titulo}
+Categoria: ${obra.categoria}
+Descrição: ${obra.descricao || 'N/A'}
+Link: ${obra.link || 'N/A'}
+
+Responda APENAS com um JSON válido no formato:
+{"nota": 8.5, "parecer": "texto da avaliação"}
+`;
+
+    try {
+        const response = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiKey}`
+            },
+            body: JSON.stringify({
+                model: "qwen-plus",
+                messages: [
+                    { role: "system", content: "Você é um jurado especializado em análise cultural." },
+                    { role: "user", content: prompt }
+                ],
+                temperature: 0.2,
+                max_tokens: 300
+            })
+        });
+
+        const data = await response.json();
+        const text = data.choices[0].message.content;
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+            return JSON.parse(jsonMatch[0]);
+        }
+        throw new Error('Resposta inválida do Qwen');
+    } catch (error) {
+        console.error('Erro Qwen:', error);
+        throw error;
+    }
+}
+
+// ============================================================
+// FUNÇÃO PRINCIPAL - AVALIAR CANDIDATO COM IA
+// ============================================================
+async function avaliarCandidatoComIA(candidatoId) {
+    try {
+        // 1. Buscar dados do candidato
+        const candSnap = await getDoc(doc(db, 'candidatos', candidatoId));
+        if (!candSnap.exists()) throw new Error('Candidato não encontrado');
+        const candidato = candSnap.data();
+
+        // 2. Buscar configurações das IAs
+        const config = await getIAConfig();
+        if (!config) throw new Error('Configuração das IAs não encontrada');
+
+        // 3. Verificar se já foi avaliado
+        if (candidato.avaliacaoIA?.status === 'concluido') {
+            toast('Este candidato já foi avaliado pela IA.', 'info');
+            return;
+        }
+
+        // 4. Atualizar status para "processando"
+        await updateDoc(doc(db, 'candidatos', candidatoId), {
+            'avaliacaoIA.status': 'processando'
+        });
+
+        // 5. Preparar objeto da obra
+        const obra = {
+            titulo: candidato.titulo || 'Sem título',
+            categoria: candidato.categoria || 'Geral',
+            descricao: candidato.descricao || '',
+            link: candidato.link || ''
+        };
+
+        // 6. Executar avaliações em paralelo
+        const [geminiResult, deepseekResult, qwenResult] = await Promise.all([
+            avaliarComGemini(obra, config.gemini.apiKey),
+            avaliarComDeepSeek(obra, config.deepseek.apiKey),
+            avaliarComQwen(obra, config.qwen.apiKey)
+        ]);
+
+        // 7. Calcular nota final (ponderada)
+        const pesos = config.pesos || { gemini: 40, deepseek: 30, qwen: 30 };
+        const notaFinal = (
+            (geminiResult.nota || 0) * (pesos.gemini / 100) +
+            (deepseekResult.nota || 0) * (pesos.deepseek / 100) +
+            (qwenResult.nota || 0) * (pesos.qwen / 100)
+        );
+
+        // 8. Salvar avaliação no Firestore
+        await updateDoc(doc(db, 'candidatos', candidatoId), {
+            'avaliacaoIA.gemini.nota': geminiResult.nota,
+            'avaliacaoIA.gemini.parecer': geminiResult.parecer,
+            'avaliacaoIA.gemini.data': Timestamp.now(),
+            'avaliacaoIA.gemini.status': 'concluido',
+            'avaliacaoIA.deepseek.nota': deepseekResult.nota,
+            'avaliacaoIA.deepseek.parecer': deepseekResult.parecer,
+            'avaliacaoIA.deepseek.data': Timestamp.now(),
+            'avaliacaoIA.deepseek.status': 'concluido',
+            'avaliacaoIA.qwen.nota': qwenResult.nota,
+            'avaliacaoIA.qwen.parecer': qwenResult.parecer,
+            'avaliacaoIA.qwen.data': Timestamp.now(),
+            'avaliacaoIA.qwen.status': 'concluido',
+            'avaliacaoIA.notaFinal': parseFloat(notaFinal.toFixed(2)),
+            'avaliacaoIA.dataAvaliacao': Timestamp.now(),
+            'avaliacaoIA.status': 'concluido'
+        });
+
+        // 9. Atualizar campo notaJuri (para compatibilidade)
+        await updateDoc(doc(db, 'candidatos', candidatoId), {
+            notaJuri: parseFloat(notaFinal.toFixed(2))
+        });
+
+        // 10. Registrar log
+        await setDoc(doc(collection(db, 'admin_logs')), {
+            acao: 'AVALIAÇÃO IA',
+            detalhes: `Candidato ${candidato.nome} avaliado pela IA. Nota: ${notaFinal.toFixed(2)}`,
+            data: Timestamp.now()
+        });
+
+        toast(`✅ Avaliação concluída! Nota final: ${notaFinal.toFixed(2)}`, 'success');
+
+        return { gemini: geminiResult, deepseek: deepseekResult, qwen: qwenResult, notaFinal };
+
+    } catch (error) {
+        console.error('Erro na avaliação IA:', error);
+        await updateDoc(doc(db, 'candidatos', candidatoId), {
+            'avaliacaoIA.status': 'erro'
+        });
+        toast('❌ Erro na avaliação: ' + error.message, 'error');
+        throw error;
+    }
+}
+
+// ============================================================
+// FUNÇÃO DE TESTE - EXECUTAR AVALIAÇÃO
+// ============================================================
+window.testarAvaliacaoIA = async function(candidatoId) {
+    if (!candidatoId) {
+        candidatoId = prompt('Digite o ID do candidato:', 'candidato1');
+        if (!candidatoId) return;
+    }
+    await avaliarCandidatoComIA(candidatoId);
+};
+
         // ════════════════════════════════════════════════════════════
         // 12. JÚRI PÚBLICO
         // ════════════════════════════════════════════════════════════
@@ -2241,6 +2546,264 @@ function renderAdmin(container) {
                 toast('Erro ao salvar avaliação.', 'error');
             }
         };
+
+// ============================================================
+// FUNÇÕES DO PAINEL IA (FORA DA FUNÇÃO carregarAdminTablesUnificado)
+// ============================================================
+
+// ============================================================
+// RENDERIZAR PAINEL IA
+// ============================================================
+async function renderizarPainelIA() {
+    const container = document.getElementById('admin-ia-panel');
+    if (!container) return;
+
+    // Buscar candidatos aprovados
+    const q = query(
+        collection(db, 'candidatos'),
+        where('status', '==', 'aprovado')
+    );
+    const snap = await getDocs(q);
+
+    if (snap.empty) {
+        container.innerHTML = '<p class="text-muted">Nenhum candidato aprovado para avaliar.</p>';
+        return;
+    }
+
+    let html = `
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>Candidato</th>
+                    <th>Obra</th>
+                    <th>Status IA</th>
+                    <th>Gemini</th>
+                    <th>DeepSeek</th>
+                    <th>Qwen</th>
+                    <th>Nota Final</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+
+    snap.forEach(docSnap => {
+        const c = docSnap.data();
+        const ia = c.avaliacaoIA || {};
+        const status = ia.status || 'pendente';
+        const notaGemini = ia.gemini?.nota || '-';
+        const notaDeepseek = ia.deepseek?.nota || '-';
+        const notaQwen = ia.qwen?.nota || '-';
+        const notaFinal = ia.notaFinal || '-';
+
+        const statusClass = status === 'concluido' ? 'aprovado' : 
+                           status === 'processando' ? 'pendente' : 
+                           status === 'erro' ? 'rejeitado' : '';
+
+        html += `
+            <tr>
+                <td>${escHtml(c.nome)}</td>
+                <td>${escHtml(c.titulo)}</td>
+                <td><span class="status-badge ${statusClass}">${status}</span></td>
+                <td><strong>${notaGemini}</strong></td>
+                <td><strong>${notaDeepseek}</strong></td>
+                <td><strong>${notaQwen}</strong></td>
+                <td><strong style="color:var(--primary);">${notaFinal}</strong></td>
+                <td>
+                    <div class="admin-cand-actions">
+                        <button class="btn btn-primary btn-sm" onclick="avaliarCandidatoIA('${docSnap.id}')">🤖 Avaliar</button>
+                        ${status === 'concluido' ? 
+                            `<button class="btn btn-outline btn-sm" onclick="verAvaliacaoIA('${docSnap.id}')">📋 Ver</button>` : 
+                            ''
+                        }
+                    </div>
+                </td>
+            </tr>
+        `;
+    });
+
+    html += '</tbody></table>';
+    container.innerHTML = html;
+}
+
+// ============================================================
+// BOTÃO AVALIAR CANDIDATO IA
+// ============================================================
+window.avaliarCandidatoIA = async function(candidatoId) {
+    // Mostrar modal de progresso
+    document.getElementById('modalTitle').textContent = '🤖 Avaliando com IA...';
+    document.getElementById('modalBody').innerHTML = `
+        <div style="text-align:center; padding:20px;">
+            <div style="font-size:3rem; margin-bottom:16px;">🤖</div>
+            <p>Consultando as IAs...</p>
+            <div class="skeleton" style="height:20px; width:80%; margin:16px auto;"></div>
+            <div class="skeleton" style="height:20px; width:60%; margin:16px auto;"></div>
+            <div class="skeleton" style="height:20px; width:70%; margin:16px auto;"></div>
+            <p class="text-muted" style="font-size:0.8rem;">Isso pode levar alguns segundos...</p>
+        </div>
+    `;
+    document.getElementById('modalActions').innerHTML = '';
+    document.getElementById('modalOverlay').classList.add('open');
+
+    try {
+        const resultado = await avaliarCandidatoComIA(candidatoId);
+
+        // Mostrar resultados no modal
+        document.getElementById('modalTitle').textContent = '📊 Resultado da Avaliação';
+        document.getElementById('modalBody').innerHTML = `
+            <div style="padding:10px;">
+                <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-bottom:20px;">
+                    <div style="background:var(--gray-light); padding:12px; border-radius:8px; text-align:center;">
+                        <div style="font-weight:800; color:var(--primary);">🌟 Gemini</div>
+                        <div style="font-size:2rem; font-weight:800;">${resultado.gemini.nota || '-'}/10</div>
+                        <div style="font-size:0.7rem; color:var(--text-muted);">Peso: 40%</div>
+                    </div>
+                    <div style="background:var(--gray-light); padding:12px; border-radius:8px; text-align:center;">
+                        <div style="font-weight:800; color:var(--secondary);">🧠 DeepSeek</div>
+                        <div style="font-size:2rem; font-weight:800;">${resultado.deepseek.nota || '-'}/10</div>
+                        <div style="font-size:0.7rem; color:var(--text-muted);">Peso: 30%</div>
+                    </div>
+                    <div style="background:var(--gray-light); padding:12px; border-radius:8px; text-align:center;">
+                        <div style="font-weight:800; color:var(--danger);">🌍 Qwen</div>
+                        <div style="font-size:2rem; font-weight:800;">${resultado.qwen.nota || '-'}/10</div>
+                        <div style="font-size:0.7rem; color:var(--text-muted);">Peso: 30%</div>
+                    </div>
+                </div>
+                <div style="background:var(--primary-light); padding:16px; border-radius:8px; text-align:center;">
+                    <strong>📌 Nota Final: </strong>
+                    <span style="font-size:2rem; font-weight:800; color:var(--primary);">${resultado.notaFinal.toFixed(2)}/10</span>
+                </div>
+                <div style="margin-top:16px; max-height:200px; overflow-y:auto;">
+                    <details>
+                        <summary style="cursor:pointer; font-weight:700;">📝 Ver pareceres completos</summary>
+                        <div style="margin-top:8px;">
+                            <div><strong>Gemini:</strong> ${resultado.gemini.parecer || 'N/A'}</div>
+                            <div style="margin-top:8px;"><strong>DeepSeek:</strong> ${resultado.deepseek.parecer || 'N/A'}</div>
+                            <div style="margin-top:8px;"><strong>Qwen:</strong> ${resultado.qwen.parecer || 'N/A'}</div>
+                        </div>
+                    </details>
+                </div>
+            </div>
+        `;
+        document.getElementById('modalActions').innerHTML = `
+            <button class="btn btn-primary" onclick="closeModal()">Fechar</button>
+            <button class="btn btn-outline" onclick="closeModal(); renderizarPainelIA();">🔄 Atualizar Lista</button>
+        `;
+
+    } catch (error) {
+        document.getElementById('modalBody').innerHTML = `
+            <div style="text-align:center; padding:20px; color:var(--danger);">
+                <div style="font-size:3rem;">❌</div>
+                <h3>Erro na Avaliação</h3>
+                <p>${error.message}</p>
+                <button class="btn btn-primary mt-2" onclick="closeModal()">Fechar</button>
+            </div>
+        `;
+        document.getElementById('modalActions').innerHTML = '';
+    }
+};
+
+// ============================================================
+// BOTÃO AVALIAR TODOS
+// ============================================================
+window.avaliarTodosIA = async function() {
+    const q = query(
+        collection(db, 'candidatos'),
+        where('status', '==', 'aprovado'),
+        where('avaliacaoIA.status', 'in', ['pendente', 'parcial', 'erro'])
+    );
+    const snap = await getDocs(q);
+
+    if (snap.empty) {
+        return toast('Todos os candidatos já foram avaliados.', 'info');
+    }
+
+    if (!confirm(`Avaliar ${snap.size} candidato(s) com IA? Isso pode levar alguns minutos.`)) return;
+
+    let processados = 0;
+    let erros = 0;
+
+    for (const docSnap of snap.docs) {
+        try {
+            await avaliarCandidatoComIA(docSnap.id);
+            processados++;
+            toast(`✅ ${processados}/${snap.size} avaliados`, 'info');
+        } catch (error) {
+            erros++;
+            console.error(`Erro em ${docSnap.id}:`, error);
+        }
+    }
+
+    toast(`Avaliação concluída! ${processados} processados, ${erros} erros.`, processados > 0 ? 'success' : 'error');
+    renderizarPainelIA();
+};
+
+// ============================================================
+// VER AVALIAÇÃO COMPLETA
+// ============================================================
+window.verAvaliacaoIA = async function(candidatoId) {
+    const snap = await getDoc(doc(db, 'candidatos', candidatoId));
+    if (!snap.exists()) return toast('Candidato não encontrado', 'error');
+    const c = snap.data();
+    const ia = c.avaliacaoIA || {};
+
+    document.getElementById('modalTitle').textContent = '📋 Avaliação Detalhada';
+    document.getElementById('modalBody').innerHTML = `
+        <div style="padding:10px;">
+            <h3>${escHtml(c.titulo)}</h3>
+            <p><strong>Autor:</strong> ${escHtml(c.nome)}</p>
+            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin:16px 0;">
+                <div style="background:var(--gray-light); padding:12px; border-radius:8px;">
+                    <div style="font-weight:800; color:var(--primary);">🌟 Gemini</div>
+                    <div style="font-size:1.5rem; font-weight:800;">${ia.gemini?.nota || '-'}/10</div>
+                    <div style="font-size:0.7rem; color:var(--text-muted);">${ia.gemini?.parecer || 'Sem parecer'}</div>
+                </div>
+                <div style="background:var(--gray-light); padding:12px; border-radius:8px;">
+                    <div style="font-weight:800; color:var(--secondary);">🧠 DeepSeek</div>
+                    <div style="font-size:1.5rem; font-weight:800;">${ia.deepseek?.nota || '-'}/10</div>
+                    <div style="font-size:0.7rem; color:var(--text-muted);">${ia.deepseek?.parecer || 'Sem parecer'}</div>
+                </div>
+                <div style="background:var(--gray-light); padding:12px; border-radius:8px;">
+                    <div style="font-weight:800; color:var(--danger);">🌍 Qwen</div>
+                    <div style="font-size:1.5rem; font-weight:800;">${ia.qwen?.nota || '-'}/10</div>
+                    <div style="font-size:0.7rem; color:var(--text-muted);">${ia.qwen?.parecer || 'Sem parecer'}</div>
+                </div>
+            </div>
+            <div style="background:var(--primary-light); padding:16px; border-radius:8px; text-align:center;">
+                <strong>📌 Nota Final: </strong>
+                <span style="font-size:1.8rem; font-weight:800; color:var(--primary);">${ia.notaFinal || '-'}/10</span>
+            </div>
+        </div>
+    `;
+    document.getElementById('modalActions').innerHTML = `
+        <button class="btn btn-primary" onclick="closeModal()">Fechar</button>
+    `;
+    document.getElementById('modalOverlay').classList.add('open');
+};
+
+// ============================================================
+// EVENTOS DOS BOTÕES DO PAINEL IA
+// ============================================================
+function initIAEvents() {
+    const btnAvaliar = document.getElementById('btn-avaliar-ia');
+    const btnAvaliarTodos = document.getElementById('btn-avaliar-todos-ia');
+    const btnAtualizar = document.getElementById('btn-atualizar-ia');
+
+    if (btnAvaliar) {
+        btnAvaliar.onclick = () => {
+            const id = prompt('Digite o ID do candidato:', 'candidato1');
+            if (id) window.avaliarCandidatoIA(id);
+        };
+    }
+
+    if (btnAvaliarTodos) {
+        btnAvaliarTodos.onclick = window.avaliarTodosIA;
+    }
+
+    if (btnAtualizar) {
+        btnAtualizar.onclick = renderizarPainelIA;
+    }
+}
 
         // ════════════════════════════════════════════════════════════
         // 13. BACKUP
