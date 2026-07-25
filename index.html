@@ -547,6 +547,7 @@
         // 3. ESTADO GLOBAL
         // ════════════════════════════════════════════════════════════
         let currentUser = null;
+        window.currentUser = null;
         let currentUserRole = 'visitor';
         let currentPage = 'home';
         let currentTheme = localStorage.getItem('c3-theme') || 'light';
@@ -708,6 +709,7 @@
 
         onAuthStateChanged(auth, async (user) => {
             currentUser = user;
+            window.currentUser = user;
             const authLink = document.getElementById('authLink');
             const adminLink = document.getElementById('adminLink');
             const juriLink = document.getElementById('juriLink');
@@ -1473,7 +1475,8 @@ function renderAdmin(container) {
         // ════════════════════════════════════════════════════════════
         // 10. ADMIN - TABELAS UNIFICADAS COM ON SNAPSHOT
         // ════════════════════════════════════════════════════════════
-async function carregarAdminTablesUnificado() {
+
+        async function carregarAdminTablesUnificado() {
             const container = document.getElementById('adminTables');
             if (!container) return;
             // Mostrar skeletons
@@ -2066,24 +2069,32 @@ async function carregarAdminTablesUnificado() {
             document.getElementById('modalOverlay').classList.add('open');
         };
 
-        window.salvarItemGenerico = async function() {
-            const collection = currentCollection;
-            const data = collectFormData(collection);
-            if (!data) { toast('Preencha os campos obrigatórios.', 'error'); return; }
-            try {
-                if (currentEditId) {
-                    await updateData(collection, currentEditId, data);
-                    toast(`${collection} atualizado!`, 'success');
-                } else {
-                    await addData(collection, data);
-                    toast(`${collection} adicionado!`, 'success');
-                }
-                closeModal();
-                renderPage('admin');
-            } catch (err) {
-                toast('Erro ao salvar: ' + err.message, 'error');
-            }
-        };
+       window.salvarItemGenerico = async function() {
+    const collection = currentCollection;
+    const data = collectFormData(collection);
+    if (!data) { toast('Preencha os campos obrigatórios.', 'error'); return; }
+    try {
+        // Verificar autenticação
+        if (!window.currentUser) {
+            toast('Você precisa estar logado para salvar.', 'error');
+            return;
+        }
+        console.log('✅ Usuário autenticado:', window.currentUser.email);
+        
+        if (currentEditId) {
+            await updateData(collection, currentEditId, data);
+            toast(`${collection} atualizado!`, 'success');
+        } else {
+            await addData(collection, data);
+            toast(`${collection} adicionado!`, 'success');
+        }
+        closeModal();
+        renderPage('admin');
+    } catch (err) {
+        console.error('❌ Erro ao salvar:', err);
+        toast('Erro ao salvar: ' + err.message, 'error');
+    }
+};
 
         window.deleteItem = async function(collection, id) {
             if (!confirm(`Excluir este item?`)) return;
