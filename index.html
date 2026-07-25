@@ -541,7 +541,27 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        window.db = db;
         const auth = getAuth(app);
+ 
+       // ════════════════════════════════════════════════════════════
+        // EXPORTAÇÕES GLOBAIS PARA TESTES E ADMIN
+        // ════════════════════════════════════════════════════════════
+        window.db = db;
+        window.auth = auth;
+        window.collection = collection;
+        window.addDoc = addDoc;
+        window.getDocs = getDocs;
+        window.doc = doc;
+        window.getDoc = getDoc;
+        window.setDoc = setDoc;
+        window.updateDoc = updateDoc;
+        window.deleteDoc = deleteDoc;
+        window.query = query;
+        window.where = where;
+        window.Timestamp = Timestamp;
+        window.onSnapshot = onSnapshot;
+
 
         // ════════════════════════════════════════════════════════════
         // 3. ESTADO GLOBAL
