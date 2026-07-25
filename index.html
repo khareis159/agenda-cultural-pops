@@ -770,13 +770,38 @@ if (user.email === 'c4brbb@gmail.com') {
             const snap = await getDocs(collection(db, col));
             return snap.docs.map(d => ({ id: d.id, ...d.data() }));
         }
+       
         async function addData(col, data) {
-            const ref = await addDoc(collection(db, col), { ...data, createdAt: Timestamp.now() });
-            return ref.id;
+            try {
+                const db = window.db;
+                if (!db) throw new Error('Firestore não inicializado');
+                const ref = await addDoc(collection(db, col), { 
+                    ...data, 
+                    createdAt: new Date() 
+                });
+                console.log('✅ Documento criado:', ref.id);
+                return ref.id;
+            } catch (err) {
+                console.error('❌ Erro no addData:', err);
+                throw err;
+            }
         }
+
+        
         async function updateData(col, id, data) {
-            await updateDoc(doc(db, col, id), { ...data, updatedAt: Timestamp.now() });
+            try {
+                const db = window.db;
+                if (!db) throw new Error('Firestore não inicializado');
+                await updateDoc(doc(db, col, id), { 
+                    ...data, 
+                    updatedAt: new Date() 
+                });
+            } catch (err) {
+                console.error('❌ Erro no updateData:', err);
+                throw err;
+            }
         }
+
         async function deleteData(col, id) {
             await deleteDoc(doc(db, col, id));
         }
@@ -2089,32 +2114,53 @@ function renderAdmin(container) {
             document.getElementById('modalOverlay').classList.add('open');
         };
 
-       window.salvarItemGenerico = async function() {
-    const collection = currentCollection;
-    const data = collectFormData(collection);
-    if (!data) { toast('Preencha os campos obrigatórios.', 'error'); return; }
-    try {
-        // Verificar autenticação
-        if (!window.currentUser) {
-            toast('Você precisa estar logado para salvar.', 'error');
-            return;
-        }
-        console.log('✅ Usuário autenticado:', window.currentUser.email);
-        
-        if (currentEditId) {
-            await updateData(collection, currentEditId, data);
-            toast(`${collection} atualizado!`, 'success');
-        } else {
-            await addData(collection, data);
-            toast(`${collection} adicionado!`, 'success');
-        }
-        closeModal();
-        renderPage('admin');
-    } catch (err) {
-        console.error('❌ Erro ao salvar:', err);
-        toast('Erro ao salvar: ' + err.message, 'error');
-    }
-};
+               window.salvarItemGenerico = async function() {
+            const collectionName = currentCollection;
+            const data = collectFormData(collectionName);
+            if (!data) { 
+                toast('Preencha os campos obrigatórios.', 'error'); 
+                return; 
+            }
+            
+            try {
+                // Verificar autenticação
+                if (!window.currentUser) {
+                    toast('Você precisa estar logado para salvar.', 'error');
+                    return;
+                }
+                
+                console.log('📝 Salvando em:', collectionName, 'Dados:', data);
+                console.log('✅ Usuário:', window.currentUser.email);
+                
+                // USAR A INSTÂNCIA db DO SISTEMA
+                const db = window.db;
+                if (!db) {
+                    toast('Erro: Firestore não inicializado.', 'error');
+                    return;
+                }
+                
+                if (currentEditId) {
+                    // Atualizar
+                    await updateDoc(doc(db, collectionName, currentEditId), {
+                        ...data,
+                        updatedAt: new Date()
+                    });
+                    toast(`${collectionName} atualizado!`, 'success');
+                } else {
+                    // Criar novo
+                    const ref = await addDoc(collection(db, collectionName), {
+                        ...data,
+                        createdAt: new Date()
+                    });
+                    toast(`${collectionName} adicionado! (ID: ${ref.id})`, 'success');
+                }
+                closeModal();
+                renderPage('admin');
+            } catch (err) {
+                console.error('❌ Erro detalhado:', err);
+                toast('Erro ao salvar: ' + err.message, 'error');
+            }
+        };
 
         window.deleteItem = async function(collection, id) {
             if (!confirm(`Excluir este item?`)) return;
