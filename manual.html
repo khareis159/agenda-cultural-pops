@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>📚 Manual Completo · C3 · Agenda Cultural Pop's 2.0</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-    size='90'>📚</text></svg>">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📚</text></svg>">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <style>
         /* ============================================================
@@ -174,6 +174,17 @@
         .sidebar::-webkit-scrollbar-thumb {
             background: var(--gray);
             border-radius: 4px;
+        }
+        .sidebar .close-side {
+            display: none;
+            position: absolute;
+            top: 16px;
+            right: 20px;
+            font-size: 1.6rem;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--text);
         }
         .sidebar h3 {
             font-size: 0.75rem;
@@ -432,6 +443,38 @@
             border-left-color: #b91c1c;
             background: #fde8e8;
         }
+        .alert-info {
+            border-left-color: #2196F3;
+            background: #e3f2fd;
+        }
+
+        /* ============================================================
+           BADGE
+           ============================================================ */
+        .badge {
+            display: inline-block;
+            padding: 2px 12px;
+            border-radius: 50px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .badge-primary {
+            background: var(--primary-light);
+            color: var(--primary);
+        }
+        .badge-secondary {
+            background: var(--secondary-light);
+            color: var(--secondary);
+        }
+        .badge-danger {
+            background: #fde8e8;
+            color: #b91c1c;
+        }
+        .badge-info {
+            background: #e3f2fd;
+            color: #1565C0;
+        }
 
         /* ============================================================
            RODAPÉ
@@ -559,6 +602,7 @@
                 display: block;
             }
             .sidebar .close-side {
+                display: block;
                 position: absolute;
                 top: 16px;
                 right: 20px;
@@ -603,7 +647,8 @@
                 <a href="#part2">📝 Participantes</a>
                 <a href="#part3">👑 Admin</a>
                 <a href="#part4">💻 Desenvolvedores</a>
-                <a href="index.html" class="btn-primary-header" style="background:var(--secondary); color:#1a2e1a; border-color:var(--        secondary); padding:10px 24px; border-radius:50px; font-weight:700; font-size:0.9rem; transition:0.3s; text-decoration:none;         display:inline-block;">🎯 Acessar o C3</a>
+                <a href="#part5">🎤 Eventos Presenciais</a>
+                <a href="index.html" class="btn-primary-header" style="background:var(--secondary); color:#1a2e1a; border-color:var(--secondary); padding:10px 24px; border-radius:50px; font-weight:700; font-size:0.9rem; transition:0.3s; text-decoration:none; display:inline-block;">🎯 Acessar o C3</a>
             </nav>
         </div>
     </header>
@@ -651,6 +696,11 @@
                 <li><a href="#part4-debug">🐛 Debugging</a></li>
                 <li><a href="#part4-deploy">🚀 Deploy</a></li>
                 <li><a href="#part4-contribuir">📚 Como Contribuir</a></li>
+                <li><a href="#part5">🎤 Parte 5 – Eventos Presenciais</a></li>
+                <li><a href="#part5-fluxo">📋 Fluxo do Evento</a></li>
+                <li><a href="#part5-registro">✍️ Registro do Admin</a></li>
+                <li><a href="#part5-escala">📊 Escala de Aplausos</a></li>
+                <li><a href="#part5-juri-humano">👤 Júri Humano</a></li>
                 <li><a href="#glossario">📝 Glossário</a></li>
             </ul>
         </aside>
@@ -763,9 +813,9 @@
                             <tr><th>Status</th><th>Significado</th></tr>
                         </thead>
                         <tbody>
-                            <tr><td><span class="badge" style="background:var(--secondary-light);color:var(--secondary);padding:2px 10px;border-radius:50px;font-weight:700;">Pendente</span></td><td>Aguardando análise do administrador</td></tr>
-                            <tr><td><span class="badge" style="background:var(--primary-light);color:var(--primary);padding:2px 10px;border-radius:50px;font-weight:700;">Aprovado</span></td><td>Obra aprovada, participa do concurso</td></tr>
-                            <tr><td><span class="badge" style="background:#fde8e8;color:#b91c1c;padding:2px 10px;border-radius:50px;font-weight:700;">Rejeitado</span></td><td>Obra não aprovada (motivo informado)</td></tr>
+                            <tr><td><span class="badge badge-secondary">Pendente</span></td><td>Aguardando análise do administrador</td></tr>
+                            <tr><td><span class="badge badge-primary">Aprovado</span></td><td>Obra aprovada, participa do concurso</td></tr>
+                            <tr><td><span class="badge badge-danger">Rejeitado</span></td><td>Obra não aprovada (motivo informado)</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -1081,6 +1131,178 @@ async function avaliarCandidatoComIA(candidatoId) {
             </section>
 
             <!-- ============================================================
+                 PARTE 5 – EVENTOS PRESENCIAIS E JÚRI HUMANO (NOVA)
+                 ============================================================ -->
+            <section class="section" id="part5">
+                <h1><span class="emoji">🎤</span> Parte 5 – Eventos Presenciais e Júri Humano</h1>
+                <p>O C3 foi projetado para ser <strong>flexível</strong>, suportando tanto eventos <strong>100% online</strong> quanto <strong>presenciais/híbridos</strong>. Esta seção explica como o sistema se adapta a eventos ao vivo, com apresentações em auditório, reação do público e atuação do júri humano.</p>
+
+                <div class="alert alert-info">
+                    <strong>🎯 Diferencial do C3:</strong> O sistema não elimina o jurado humano. Pelo contrário – ele foi projetado para ser <strong>híbrido</strong>, combinando o melhor da tecnologia (IA) com o olhar sensível e contextual do ser humano.
+                </div>
+
+                <h2 id="part5-fluxo">📋 Fluxo de um Evento Presencial</h2>
+
+                <div style="background:var(--gray-light);padding:20px;border-radius:var(--radius-sm);margin:16px 0;">
+                    <ol style="margin:0;padding-left:20px;">
+                        <li><strong>🎤 Artista se apresenta ao vivo</strong> – Música, poesia declamada, dança ou teatro.</li>
+                        <li><strong>👏 Público reage</strong> – Aplausos, emoção, energia da plateia.</li>
+                        <li><strong>✍️ Administrador observa e registra</strong> – Anota a reação do público e sua avaliação técnica.</li>
+                        <li><strong>📝 Admin insere a nota no sistema</strong> – Através do painel "⭐ Notas do Júri" ou "🎯 Júri".</li>
+                        <li><strong>🤖 IA também avalia</strong> – A nota da IA serve como referência técnica (opcional).</li>
+                        <li><strong>📊 Sistema calcula a nota final</strong> – Combinando Júri Humano + IA + Voto Popular.</li>
+                    </ol>
+                </div>
+
+                <h3>🎯 Como o Administrador Registra a Reação do Público</h3>
+                <p>O administrador, durante ou após a apresentação, acessa o sistema e registra a nota que reflete:</p>
+                <ul>
+                    <li><strong>Intensidade dos aplausos</strong> – Reação imediata do público.</li>
+                    <li><strong>Energia da plateia</strong> – Envolvimento e emoção demonstrada.</li>
+                    <li><strong>Conexão com a obra</strong> – Como o público recebeu a mensagem artística.</li>
+                </ul>
+
+                <div class="alert alert-success">
+                    <strong>💡 Dica:</strong> O admin pode registrar a nota imediatamente após cada apresentação, usando um celular, tablet ou notebook, garantindo que a reação do público ainda esteja fresca na memória.
+                </div>
+
+                <h2 id="part5-registro">✍️ Como o Admin Registra a Nota no Sistema</h2>
+
+                <h3>Opção 1 – Seção "⭐ Notas do Júri (Técnico)"</h3>
+                <p><strong>Local:</strong> Admin → "⭐ Notas do Júri (Técnico)"</p>
+                <ol>
+                    <li>Localize o candidato que se apresentou.</li>
+                    <li>Digite a nota (0-10) no campo.</li>
+                    <li>Clique em <strong>"Salvar"</strong>.</li>
+                    <li>A nota é registrada no campo <code>notaJuri</code> do candidato.</li>
+                </ol>
+
+                <h3>Opção 2 – Aba "🎯 Júri" (avaliação detalhada)</h3>
+                <p><strong>Local:</strong> Menu → "🎯 Júri" (disponível para admins e jurados)</p>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr><th>Critério</th><th>Peso</th><th>O que representa</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>🌟 <strong>Aura</strong></td><td>40%</td><td>Impacto emocional, presença de palco, conexão com o público (inclui reação da plateia)</td></tr>
+                            <tr><td>💡 <strong>Criatividade</strong></td><td>30%</td><td>Originalidade da performance, inovação</td></tr>
+                            <tr><td>🎨 <strong>Estilo</strong></td><td>30%</td><td>Técnica, execução, qualidade artística</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="alert alert-info">
+                    <strong>📌 Nota final do júri:</strong><br>
+                    <code>Nota Final = (Aura × 0.4) + (Criatividade × 0.3) + (Estilo × 0.3)</code>
+                </div>
+
+                <h2 id="part5-escala">📊 Escala de Aplausos (Sugestão)</h2>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr><th>Reação do Público</th><th>Nota</th><th>Descrição</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>🎉 Aplausos em pé, gritos, euforia</td><td>9.0 - 10.0</td><td>Obras memoráveis, impacto profundo</td></tr>
+                            <tr><td>👏 Aplausos intensos, muitos sorrisos</td><td>7.0 - 8.9</td><td>Obras muito boas, forte conexão</td></tr>
+                            <tr><td>🙌 Aplausos médios, reação positiva</td><td>5.0 - 6.9</td><td>Obras boas, recepção favorável</td></tr>
+                            <tr><td>🤝 Aplausos tímidos, reação mista</td><td>3.0 - 4.9</td><td>Obras medianas, pouca conexão</td></tr>
+                            <tr><td>🤷 Silêncio ou indiferença</td><td>0.0 - 2.9</td><td>Baixa receptividade, sem conexão</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h2 id="part5-juri-humano">👤 O Papel do Júri Humano</h2>
+
+                <h3>O Júri Humano no C3</h3>
+                <p>O sistema <strong>não elimina o jurado humano</strong> – ele o integra. O júri humano atua como:</p>
+                <ul>
+                    <li><strong>🎯 Avaliador principal</strong> – Atribui notas baseadas na experiência ao vivo.</li>
+                    <li><strong>📝 Registrador da reação do público</strong> – Captura a energia da plateia.</li>
+                    <li><strong>🔍 Validador da IA</strong> – Pode revisar e ajustar as notas automáticas.</li>
+                    <li><strong>🎭 Intérprete cultural</strong> – Traz sensibilidade e contexto que a IA não possui.</li>
+                </ul>
+
+                <div class="card-grid">
+                    <div class="card-item">
+                        <span class="card-icon">🧠</span>
+                        <h4>IA (Gemini, DeepSeek, Qwen)</h4>
+                        <p>Análise técnica, criatividade e impacto cultural. Consistente e rápida.</p>
+                    </div>
+                    <div class="card-item">
+                        <span class="card-icon">👤</span>
+                        <h4>Júri Humano (Admin)</h4>
+                        <p>Sensibilidade, contexto cultural, percepção da reação do público. Único e subjetivo.</p>
+                    </div>
+                    <div class="card-item">
+                        <span class="card-icon">🤝</span>
+                        <h4>Modelo Híbrido</h4>
+                        <p>O melhor dos dois mundos: IA + Humano = avaliação completa e justa.</p>
+                    </div>
+                </div>
+
+                <h3>Como Criar um Jurado Humano</h3>
+                <ol>
+                    <li><strong>Crie o usuário</strong> no Firebase Authentication.</li>
+                    <li><strong>Adicione a role</strong> no Firestore (coleção <code>users</code>):
+                        <ul>
+                            <li>Documento com o <strong>UID</strong> do usuário.</li>
+                            <li>Campo <code>role: "jurado"</code> (ou <code>"admin"</code>).</li>
+                        </ul>
+                    </li>
+                    <li><strong>O jurado faz login</strong> e acessa a aba <strong>"🎯 Júri"</strong>.</li>
+                    <li><strong>Atribui notas</strong> (Aura, Criatividade, Estilo).</li>
+                    <li><strong>A nota é salva</strong> automaticamente no Firestore.</li>
+                </ol>
+
+                <div class="alert alert-success">
+                    <strong>✅ Vantagens do Modelo Híbrido:</strong><br>
+                    • <strong>Agilidade</strong> – IA processa em segundos.<br>
+                    • <strong>Transparência</strong> – Pareceres escritos e públicos.<br>
+                    • <strong>Emoção</strong> – Humano capta o que a IA não vê.<br>
+                    • <strong>Flexibilidade</strong> – Funciona online, presencial ou híbrido.
+                </div>
+
+                <h2 id="part5-exemplo">🎤 Exemplo Prático</h2>
+
+                <h3>Apresentação: João Silva (Música)</h3>
+
+                <div style="background:var(--gray-light);padding:16px;border-radius:var(--radius-sm);margin:16px 0;">
+                    <p><strong>🎵 Obra:</strong> "Sinfonia da Alma"<br>
+                    <strong>📝 Descrição:</strong> Composição instrumental que retrata a jornada humana.<br>
+                    <strong>👏 Reação do público:</strong> Aplausos intensos, público em pé ao final.</p>
+                </div>
+
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr><th>Avaliador</th><th>Nota</th><th>Observação</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>🌟 <strong>Júri Humano (Aura)</strong></td><td>9.0</td><td>Público vibrou, conexão emocional forte</td></tr>
+                            <tr><td>💡 <strong>Júri Humano (Criatividade)</strong></td><td>8.0</td><td>Original, mas sem grandes inovações</td></tr>
+                            <tr><td>🎨 <strong>Júri Humano (Estilo)</strong></td><td>8.5</td><td>Técnica impecável</td></tr>
+                            <tr><td>🤖 <strong>Gemini (IA)</strong></td><td>8.5</td><td>Análise técnica e estética</td></tr>
+                            <tr><td>🧠 <strong>DeepSeek (IA)</strong></td><td>9.0</td><td>Criatividade e inovação</td></tr>
+                            <tr><td>🌍 <strong>Qwen (IA)</strong></td><td>7.5</td><td>Impacto cultural</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <p><strong>Nota Final do Júri (Humano + IA):</strong></p>
+                <div style="background:var(--primary-light);padding:16px;border-radius:var(--radius-sm);text-align:center;">
+                    <code style="font-size:1.2rem;font-weight:700;color:var(--primary);">
+                        Nota Final = (Aura × 0.4) + (Criatividade × 0.3) + (Estilo × 0.3) = 8.55
+                    </code>
+                </div>
+
+                <div style="margin-top:16px;background:var(--secondary-light);padding:16px;border-radius:var(--radius-sm);text-align:center;">
+                    <strong>📌 Resultado:</strong> O candidato avança para a fase final com excelente avaliação!
+                </div>
+            </section>
+
+            <!-- ============================================================
                  GLOSSÁRIO
                  ============================================================ -->
             <section class="section" id="glossario">
@@ -1102,6 +1324,8 @@ async function avaliarCandidatoComIA(candidatoId) {
                             <tr><td><strong>Map</strong></td><td>Estrutura de dados do Firestore (objeto)</td></tr>
                             <tr><td><strong>Timestamp</strong></td><td>Data e hora no Firestore</td></tr>
                             <tr><td><strong>onSnapshot</strong></td><td>Listener em tempo real do Firestore</td></tr>
+                            <tr><td><strong>Júri Híbrido</strong></td><td>Modelo que combina IA + jurados humanos</td></tr>
+                            <tr><td><strong>Aura</strong></td><td>Critério de avaliação: presença de palco e conexão com o público</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -1126,18 +1350,19 @@ async function avaliarCandidatoComIA(candidatoId) {
                 </p>
             </div>
             <div class="footer-col">
-    <h4>📚 Links Rápidos</h4>
-    <p><a href="#part1">🎭 Parte 1 – Público</a></p>
-    <p><a href="#part2">📝 Parte 2 – Participantes</a></p>
-    <p><a href="#part3">👑 Parte 3 – Admin</a></p>
-    <p><a href="#part4">💻 Parte 4 – Desenvolvedores</a></p>
-    <p><a href="#glossario">📝 Glossário</a></p>
-    <p style="margin-top:12px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.1);">
-        <a href="index.html" style="background:var(--secondary); color:#1a2e1a; padding:10px 20px; border-radius:50px; font-weight:800; text-decoration:none; display:inline-block; transition:0.3s;">
-            🎯 Acessar o C3
-        </a>
-    </p>
-</div>
+                <h4>📚 Links Rápidos</h4>
+                <p><a href="#part1">🎭 Parte 1 – Público</a></p>
+                <p><a href="#part2">📝 Parte 2 – Participantes</a></p>
+                <p><a href="#part3">👑 Parte 3 – Admin</a></p>
+                <p><a href="#part4">💻 Parte 4 – Desenvolvedores</a></p>
+                <p><a href="#part5">🎤 Parte 5 – Eventos Presenciais</a></p>
+                <p><a href="#glossario">📝 Glossário</a></p>
+                <p style="margin-top:12px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.1);">
+                    <a href="index.html" style="background:var(--secondary); color:#1a2e1a; padding:10px 20px; border-radius:50px; font-weight:800; text-decoration:none; display:inline-block; transition:0.3s;">
+                        🎯 Acessar o C3
+                    </a>
+                </p>
+            </div>
             <div class="footer-col">
                 <h4>📞 Suporte</h4>
                 <p>📧 <a href="mailto:carlos@c3cultural.com.br">carlos@c3cultural.com.br</a></p>
