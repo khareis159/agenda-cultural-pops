@@ -1,0 +1,1231 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>📚 Manual Completo · C3 · Agenda Cultural Pop's 2.0</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-    size='90'>📚</text></svg>">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <style>
+        /* ============================================================
+           RESET E ESTILOS GLOBAIS
+           ============================================================ */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        :root {
+            --primary: #0d7a4e;
+            --primary-dark: #0a623f;
+            --primary-light: #e8f5ee;
+            --secondary: #f39c12;
+            --secondary-light: #fff8ec;
+            --bg: #f5f7f5;
+            --text: #1a2e1a;
+            --text-muted: #5a7060;
+            --white: #ffffff;
+            --gray: #d0ddd0;
+            --gray-light: #eef2ee;
+            --shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+            --radius: 16px;
+            --radius-sm: 8px;
+            --transition: 0.3s ease;
+            --font: 'Inter', sans-serif;
+            --max-width: 1200px;
+        }
+        html {
+            scroll-behavior: smooth;
+        }
+        body {
+            font-family: var(--font);
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+        }
+        a {
+            color: var(--primary);
+            text-decoration: none;
+            transition: color var(--transition);
+        }
+        a:hover {
+            color: var(--primary-dark);
+            text-decoration: underline;
+        }
+        .container {
+            max-width: var(--max-width);
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* ============================================================
+           BOTÃO DE ACESSIBILIDADE / MENU MOBILE
+           ============================================================ */
+        .menu-toggle {
+            display: none;
+            background: var(--primary);
+            color: var(--white);
+            border: none;
+            padding: 12px 18px;
+            border-radius: var(--radius-sm);
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background var(--transition);
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 1000;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+        }
+        .menu-toggle:hover {
+            background: var(--primary-dark);
+        }
+
+        /* ============================================================
+           HEADER
+           ============================================================ */
+        .main-header {
+            background: linear-gradient(150deg, #07301e 0%, var(--primary) 100%);
+            color: var(--white);
+            padding: 28px 0 20px;
+            border-bottom: 4px solid var(--secondary);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: var(--shadow);
+        }
+        .main-header .container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+        .logo {
+            font-size: 1.6rem;
+            font-weight: 900;
+            letter-spacing: -0.5px;
+        }
+        .logo span {
+            color: var(--secondary);
+        }
+        .logo small {
+            display: block;
+            font-size: 0.7rem;
+            font-weight: 400;
+            opacity: 0.85;
+        }
+        .header-links {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .header-links a {
+            color: rgba(255, 255, 255, 0.9);
+            padding: 8px 16px;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            transition: var(--transition);
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid transparent;
+        }
+        .header-links a:hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: var(--white);
+            text-decoration: none;
+        }
+        .header-links a.btn-primary-header {
+            background: var(--secondary);
+            color: #1a2e1a;
+            border-color: var(--secondary);
+        }
+        .header-links a.btn-primary-header:hover {
+            background: #d4880e;
+            border-color: #d4880e;
+        }
+
+        /* ============================================================
+           NAVEGAÇÃO LATERAL (STICKY)
+           ============================================================ */
+        .page-wrapper {
+            display: flex;
+            gap: 32px;
+            padding: 32px 0;
+            align-items: flex-start;
+        }
+        .sidebar {
+            position: sticky;
+            top: 120px;
+            flex: 0 0 280px;
+            background: var(--white);
+            border-radius: var(--radius);
+            padding: 20px 16px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--gray);
+            max-height: calc(100vh - 160px);
+            overflow-y: auto;
+        }
+        .sidebar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .sidebar::-webkit-scrollbar-thumb {
+            background: var(--gray);
+            border-radius: 4px;
+        }
+        .sidebar h3 {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--gray-light);
+        }
+        .sidebar ul {
+            list-style: none;
+            padding: 0;
+        }
+        .sidebar ul li {
+            margin-bottom: 4px;
+        }
+        .sidebar ul li a {
+            display: block;
+            padding: 8px 12px;
+            border-radius: var(--radius-sm);
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text);
+            transition: var(--transition);
+            border-left: 3px solid transparent;
+        }
+        .sidebar ul li a:hover {
+            background: var(--primary-light);
+            color: var(--primary);
+            text-decoration: none;
+            border-left-color: var(--primary);
+        }
+        .sidebar ul li a.active {
+            background: var(--primary-light);
+            color: var(--primary);
+            border-left-color: var(--secondary);
+            font-weight: 700;
+        }
+        .sidebar ul li a .badge-side {
+            float: right;
+            font-size: 0.6rem;
+            background: var(--secondary);
+            color: #1a2e1a;
+            padding: 2px 8px;
+            border-radius: 50px;
+            font-weight: 700;
+        }
+
+        /* ============================================================
+           CONTEÚDO PRINCIPAL
+           ============================================================ */
+        .main-content {
+            flex: 1;
+            min-width: 0;
+        }
+        .section {
+            background: var(--white);
+            border-radius: var(--radius);
+            padding: 32px 36px;
+            margin-bottom: 28px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--gray);
+            scroll-margin-top: 100px;
+        }
+        .section h1 {
+            font-size: 2.2rem;
+            font-weight: 900;
+            color: var(--primary-dark);
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+        .section h1 .emoji {
+            font-size: 2rem;
+        }
+        .section h2 {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: var(--primary);
+            margin-top: 32px;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--gray-light);
+        }
+        .section h3 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text);
+            margin-top: 24px;
+            margin-bottom: 10px;
+        }
+        .section h4 {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            margin-top: 16px;
+            margin-bottom: 6px;
+        }
+        .section p {
+            margin-bottom: 14px;
+            color: var(--text);
+        }
+        .section ul,
+        .section ol {
+            margin: 10px 0 16px 24px;
+        }
+        .section ul li,
+        .section ol li {
+            margin-bottom: 6px;
+        }
+        .section blockquote {
+            background: var(--secondary-light);
+            border-left: 4px solid var(--secondary);
+            padding: 16px 20px;
+            border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+            margin: 16px 0;
+            font-style: italic;
+            color: var(--text-muted);
+        }
+        .section blockquote strong {
+            color: var(--text);
+        }
+
+        /* ============================================================
+           TABELAS
+           ============================================================ */
+        .table-wrap {
+            overflow-x: auto;
+            margin: 16px 0 20px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--gray);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            background: var(--white);
+        }
+        table thead {
+            background: var(--primary-light);
+        }
+        table th {
+            text-align: left;
+            padding: 12px 16px;
+            font-weight: 700;
+            color: var(--primary-dark);
+            border-bottom: 2px solid var(--gray);
+        }
+        table td {
+            padding: 10px 16px;
+            border-bottom: 1px solid var(--gray-light);
+            vertical-align: top;
+        }
+        table tr:last-child td {
+            border-bottom: none;
+        }
+        table tbody tr:hover {
+            background: var(--gray-light);
+        }
+
+        /* ============================================================
+           CARDS
+           ============================================================ */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 20px;
+            margin: 16px 0 20px;
+        }
+        .card-item {
+            background: var(--gray-light);
+            border-radius: var(--radius-sm);
+            padding: 18px 20px;
+            border: 1px solid var(--gray);
+            transition: var(--transition);
+        }
+        .card-item:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow);
+            border-color: var(--primary);
+        }
+        .card-item .card-icon {
+            font-size: 2rem;
+            display: block;
+            margin-bottom: 6px;
+        }
+        .card-item h4 {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--primary-dark);
+            margin-bottom: 4px;
+        }
+        .card-item p {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin: 0;
+        }
+
+        /* ============================================================
+           BOTÕES
+           ============================================================ */
+        .btn {
+            display: inline-block;
+            padding: 10px 24px;
+            border-radius: var(--radius-sm);
+            font-weight: 700;
+            font-size: 0.9rem;
+            border: none;
+            cursor: pointer;
+            transition: var(--transition);
+            text-align: center;
+            background: var(--gray-light);
+            color: var(--text);
+        }
+        .btn-primary {
+            background: var(--primary);
+            color: var(--white);
+        }
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            text-decoration: none;
+        }
+        .btn-secondary {
+            background: var(--secondary);
+            color: #1a2e1a;
+        }
+        .btn-secondary:hover {
+            background: #d4880e;
+            text-decoration: none;
+        }
+        .btn-outline {
+            background: transparent;
+            border: 2px solid var(--primary);
+            color: var(--primary);
+        }
+        .btn-outline:hover {
+            background: var(--primary-light);
+            text-decoration: none;
+        }
+
+        /* ============================================================
+           TOAST / ALERTA
+           ============================================================ */
+        .alert {
+            padding: 16px 20px;
+            border-radius: var(--radius-sm);
+            margin: 16px 0;
+            border-left: 4px solid var(--secondary);
+            background: var(--secondary-light);
+        }
+        .alert-success {
+            border-left-color: var(--primary);
+            background: var(--primary-light);
+        }
+        .alert-danger {
+            border-left-color: #b91c1c;
+            background: #fde8e8;
+        }
+
+        /* ============================================================
+           RODAPÉ
+           ============================================================ */
+        .main-footer {
+            background: #07301e;
+            color: rgba(255, 255, 255, 0.8);
+            padding: 40px 0 24px;
+            margin-top: 32px;
+            border-top: 4px solid var(--secondary);
+        }
+        .main-footer .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 32px;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+        .main-footer .footer-col {
+            flex: 1;
+            min-width: 200px;
+        }
+        .main-footer .footer-col h4 {
+            color: var(--white);
+            font-weight: 700;
+            margin-bottom: 8px;
+            font-size: 1rem;
+        }
+        .main-footer .footer-col p,
+        .main-footer .footer-col a {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+        .main-footer .footer-col a:hover {
+            color: var(--secondary);
+            text-decoration: underline;
+        }
+        .main-footer .footer-bottom {
+            width: 100%;
+            text-align: center;
+            padding-top: 24px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.5);
+        }
+        .pix-box {
+            background: rgba(255, 255, 255, 0.06);
+            padding: 12px 18px;
+            border-radius: var(--radius-sm);
+            font-family: monospace;
+            font-size: 1rem;
+            border: 1px dashed rgba(255, 255, 255, 0.2);
+            display: inline-block;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .pix-box:hover {
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        /* ============================================================
+           RESPONSIVO
+           ============================================================ */
+        @media (max-width: 1024px) {
+            .page-wrapper {
+                flex-direction: column;
+            }
+            .sidebar {
+                position: relative;
+                top: 0;
+                flex: 1;
+                max-height: none;
+                width: 100%;
+            }
+        }
+        @media (max-width: 768px) {
+            .main-header .container {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 12px;
+            }
+            .header-links {
+                justify-content: center;
+                gap: 8px;
+            }
+            .header-links a {
+                font-size: 0.75rem;
+                padding: 6px 12px;
+            }
+            .section {
+                padding: 20px 16px;
+            }
+            .section h1 {
+                font-size: 1.6rem;
+            }
+            .section h2 {
+                font-size: 1.3rem;
+            }
+            .card-grid {
+                grid-template-columns: 1fr;
+            }
+            .sidebar ul li a {
+                font-size: 0.8rem;
+                padding: 6px 10px;
+            }
+            .menu-toggle {
+                display: block;
+            }
+            .sidebar {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100vh;
+                max-height: 100vh;
+                border-radius: 0;
+                z-index: 999;
+                padding-top: 60px;
+                overflow-y: auto;
+                background: var(--white);
+                box-shadow: 0 8px 40px rgba(0, 0, 0, 0.3);
+            }
+            .sidebar.open {
+                display: block;
+            }
+            .sidebar .close-side {
+                position: absolute;
+                top: 16px;
+                right: 20px;
+                font-size: 1.6rem;
+                background: none;
+                border: none;
+                cursor: pointer;
+                color: var(--text);
+            }
+        }
+        @media (max-width: 480px) {
+            .header-links a {
+                font-size: 0.7rem;
+                padding: 4px 10px;
+            }
+            .section h1 {
+                font-size: 1.3rem;
+            }
+            .section h2 {
+                font-size: 1.1rem;
+            }
+            .main-footer .container {
+                flex-direction: column;
+                gap: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ============================================================
+         HEADER
+         ============================================================ -->
+    <header class="main-header">
+        <div class="container">
+            <div class="logo">
+                📚 <span>C3</span> · Manual Completo
+                <small>Agenda Cultural Pop's 2.0 · Concurso de Mérito</small>
+            </div>
+            <nav class="header-links">
+                <a href="#part1">🎭 Público</a>
+                <a href="#part2">📝 Participantes</a>
+                <a href="#part3">👑 Admin</a>
+                <a href="#part4">💻 Desenvolvedores</a>
+                <a href="index.html" class="btn-primary-header" style="background:var(--secondary); color:#1a2e1a; border-color:var(--        secondary); padding:10px 24px; border-radius:50px; font-weight:700; font-size:0.9rem; transition:0.3s; text-decoration:none;         display:inline-block;">🎯 Acessar o C3</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- ============================================================
+         BOTÃO MENU MOBILE
+         ============================================================ -->
+    <button class="menu-toggle" id="menuToggle" aria-label="Abrir menu">📋 Menu</button>
+
+    <!-- ============================================================
+         CONTEÚDO PRINCIPAL
+         ============================================================ -->
+    <div class="container page-wrapper">
+
+        <!-- ==================== SIDEBAR ==================== -->
+        <aside class="sidebar" id="sidebar">
+            <button class="close-side" id="closeSide" aria-label="Fechar menu">✕</button>
+            <h3>🎯 Navegação Rápida</h3>
+            <ul>
+                <li><a href="#part1" class="active">🎭 Parte 1 – Público</a></li>
+                <li><a href="#part1-missao">📌 Missão</a></li>
+                <li><a href="#part1-categorias">🏷️ Categorias</a></li>
+                <li><a href="#part1-ias">🤖 Como as IAs Avaliam</a></li>
+                <li><a href="#part1-votacao">🗳️ Voto Popular</a></li>
+                <li><a href="#part1-premiacao">🏅 Premiação</a></li>
+                <li><a href="#part2">📝 Parte 2 – Participantes</a></li>
+                <li><a href="#part2-inscrever">📤 Inscrever Obra</a></li>
+                <li><a href="#part2-status">✅ Status da Inscrição</a></li>
+                <li><a href="#part2-votar">🗳️ Como Votar</a></li>
+                <li><a href="#part2-pix">💰 Pagamento PIX</a></li>
+                <li><a href="#part2-ranking">📊 Ranking</a></li>
+                <li><a href="#part3">👑 Parte 3 – Admin</a></li>
+                <li><a href="#part3-conteudo">📝 Gerenciar Conteúdo</a></li>
+                <li><a href="#part3-candidatos">👥 Aprovar Candidatos</a></li>
+                <li><a href="#part3-pagamentos">💰 Confirmar Pagamentos</a></li>
+                <li><a href="#part3-juri">⭐ Notas do Júri</a></li>
+                <li><a href="#part3-ia">🤖 Avaliação com IA</a></li>
+                <li><a href="#part3-encerrar">🏁 Encerrar Edição</a></li>
+                <li><a href="#part3-backup">📦 Backup</a></li>
+                <li><a href="#part4">💻 Parte 4 – Devs</a></li>
+                <li><a href="#part4-arquitetura">🏗️ Arquitetura</a></li>
+                <li><a href="#part4-firestore">🔥 Estrutura Firestore</a></li>
+                <li><a href="#part4-ia-integracao">🧠 Integração com IAs</a></li>
+                <li><a href="#part4-funcoes">🔧 Funções Importantes</a></li>
+                <li><a href="#part4-debug">🐛 Debugging</a></li>
+                <li><a href="#part4-deploy">🚀 Deploy</a></li>
+                <li><a href="#part4-contribuir">📚 Como Contribuir</a></li>
+                <li><a href="#glossario">📝 Glossário</a></li>
+            </ul>
+        </aside>
+
+        <!-- ==================== CONTEÚDO ==================== -->
+        <main class="main-content">
+
+            <!-- ============================================================
+                 PARTE 1 – PÚBLICO
+                 ============================================================ -->
+            <section class="section" id="part1">
+                <h1><span class="emoji">🎭</span> Parte 1 – Para o Público em Geral</h1>
+                <p><strong>Bem-vindo ao C3 – Clube de Competições Culturais!</strong> Esta seção explica o que é o C3, como funciona, e como você pode participar como espectador, apoiador ou entusiasta da cultura.</p>
+
+                <h2 id="part1-missao">📌 Missão</h2>
+                <blockquote>
+                    “Democratizar o acesso à cultura, oferecendo uma plataforma justa e transparente para artistas de todas as categorias, utilizando tecnologia para amplificar talentos e conectar artistas ao público.”
+                </blockquote>
+                <p>O C3 nasceu para ser um espaço onde a <strong>arte encontra a tecnologia</strong>, onde o mérito é avaliado com transparência e onde cada voto conta.</p>
+
+                <h2 id="part1-categorias">🏷️ Categorias Participantes</h2>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr><th>Categoria</th><th>Descrição</th><th>Exemplos</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>🎵 <strong>Música</strong></td><td>Obras musicais de qualquer gênero</td><td>Canções, instrumentais, MPB, Rock, Samba</td></tr>
+                            <tr><td>📜 <strong>Poesia</strong></td><td>Obras poéticas e literárias</td><td>Poemas, haikais, prosas poéticas</td></tr>
+                            <tr><td>🎨 <strong>Artes Visuais</strong></td><td>Obras visuais e plásticas</td><td>Pintura, desenho, fotografia, escultura</td></tr>
+                            <tr><td>💃 <strong>Dança</strong></td><td>Performances coreográficas</td><td>Ballet, danças urbanas, danças folclóricas</td></tr>
+                            <tr><td>🎭 <strong>Teatro</strong></td><td>Obras teatrais e performances</td><td>Monólogos, peças, performances</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h2 id="part1-ias">🤖 Como as IAs Avaliam?</h2>
+                <p>Três IAs renomadas compõem o júri técnico, cada uma com um papel específico e um peso na nota final:</p>
+                <div class="card-grid">
+                    <div class="card-item">
+                        <span class="card-icon">🌟</span>
+                        <h4>Gemini (Google)</h4>
+                        <p>Análise técnica e estética — 40%</p>
+                    </div>
+                    <div class="card-item">
+                        <span class="card-icon">🧠</span>
+                        <h4>DeepSeek</h4>
+                        <p>Criatividade e inovação — 30%</p>
+                    </div>
+                    <div class="card-item">
+                        <span class="card-icon">🌍</span>
+                        <h4>Qwen (Alibaba)</h4>
+                        <p>Impacto cultural e relevância social — 30%</p>
+                    </div>
+                </div>
+
+                <h2 id="part1-votacao">🗳️ Voto Popular</h2>
+                <p>O público pode votar em suas obras favoritas através de:</p>
+                <ul>
+                    <li><strong>Voto via PIX</strong> – valor simbólico para engajamento (R$ 2,00 por voto).</li>
+                    <li><strong>Sistema de votação integrado</strong> – um voto por CPF.</li>
+                </ul>
+                <p>A nota do voto popular é convertida em uma escala de 0 a 10, proporcional ao número de votos recebidos.</p>
+
+                <h2 id="part1-premiacao">🏅 Premiação</h2>
+                <p>O vencedor do concurso recebe:</p>
+                <ul>
+                    <li>🏆 Prêmio em dinheiro (valor variável por edição)</li>
+                    <li>📜 Certificado de Mérito Cultural</li>
+                    <li>📢 Divulgação nas redes sociais e plataformas do C3</li>
+                    <li>🎨 Visibilidade nacional</li>
+                </ul>
+                <div class="alert alert-success">
+                    <strong>✨ Transparência Total:</strong> Todos os pareceres das IAs são públicos e podem ser consultados por qualquer participante.
+                </div>
+            </section>
+
+            <!-- ============================================================
+                 PARTE 2 – PARTICIPANTES
+                 ============================================================ -->
+            <section class="section" id="part2">
+                <h1><span class="emoji">📝</span> Parte 2 – Para Participantes</h1>
+                <p>Se você é artista e quer participar do concurso, esta seção é para você. Aqui você encontrará tudo o que precisa saber para inscrever sua obra, acompanhar sua participação e votar.</p>
+
+                <h2 id="part2-inscrever">📤 Como Inscrever sua Obra</h2>
+                <h3>Passo a Passo:</h3>
+                <ol>
+                    <li><strong>Acesse o sistema</strong> pelo navegador.</li>
+                    <li><strong>Clique em "Inscrever"</strong> no menu superior.</li>
+                    <li><strong>Preencha o formulário</strong> com seus dados e os da obra:
+                        <ul>
+                            <li>Nome completo</li>
+                            <li>CPF</li>
+                            <li>Título da obra</li>
+                            <li>Link do YouTube/Drive</li>
+                            <li>WhatsApp</li>
+                            <li>URL da foto/capa</li>
+                            <li>Categoria (Música, Poesia, Artes Visuais, Dança, Teatro)</li>
+                        </ul>
+                    </li>
+                    <li><strong>Leia e aceite</strong> os Termos e Condições.</li>
+                    <li><strong>Clique em "Enviar Inscrição"</strong>.</li>
+                    <li><strong>Aguarde a aprovação</strong> do administrador.</li>
+                </ol>
+
+                <h2 id="part2-status">✅ Status da Inscrição</h2>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr><th>Status</th><th>Significado</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td><span class="badge" style="background:var(--secondary-light);color:var(--secondary);padding:2px 10px;border-radius:50px;font-weight:700;">Pendente</span></td><td>Aguardando análise do administrador</td></tr>
+                            <tr><td><span class="badge" style="background:var(--primary-light);color:var(--primary);padding:2px 10px;border-radius:50px;font-weight:700;">Aprovado</span></td><td>Obra aprovada, participa do concurso</td></tr>
+                            <tr><td><span class="badge" style="background:#fde8e8;color:#b91c1c;padding:2px 10px;border-radius:50px;font-weight:700;">Rejeitado</span></td><td>Obra não aprovada (motivo informado)</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h2 id="part2-votar">🗳️ Como Votar</h2>
+                <ol>
+                    <li><strong>Clique em "Votar"</strong> no menu.</li>
+                    <li><strong>Selecione o candidato</strong> que deseja votar (clique no card).</li>
+                    <li><strong>Preencha seus dados</strong>: Nome, CPF, E-mail, WhatsApp.</li>
+                    <li><strong>Aceite os Termos</strong>.</li>
+                    <li><strong>Clique em "Confirmar Voto"</strong>.</li>
+                    <li><strong>Realize o pagamento via PIX</strong> (R$ 2,00 por voto).</li>
+                    <li><strong>Aguarde a confirmação</strong> do administrador.</li>
+                </ol>
+
+                <h2 id="part2-pix">💰 Pagamento via PIX</h2>
+                <ol>
+                    <li>Copie a chave PIX exibida.</li>
+                    <li>Realize o pagamento no app do seu banco.</li>
+                    <li>O voto será confirmado manualmente pelo admin.</li>
+                    <li>Você receberá notificação de confirmação.</li>
+                </ol>
+                <div class="alert alert-danger">
+                    <strong>⚠️ Importante:</strong> O voto só é contabilizado após a confirmação do pagamento.
+                </div>
+
+                <h2 id="part2-ranking">📊 Acompanhar o Ranking</h2>
+                <ol>
+                    <li><strong>Clique em "Ranking"</strong> no menu.</li>
+                    <li>Veja a lista de candidatos aprovados.</li>
+                    <li>Verifique a nota parcial e a nota final.</li>
+                    <li>Acompanhe a votação em tempo real.</li>
+                </ol>
+
+                <h2 id="part2-dicas">💡 Dicas para se Destacar</h2>
+                <blockquote>
+                    <strong>1️⃣ Autenticidade:</strong> “O júri valoriza obras originais. Mostre sua voz única.”<br>
+                    <strong>2️⃣ Técnica:</strong> “Dedique tempo para aperfeiçoar sua obra. Pequenos detalhes fazem a diferença.”<br>
+                    <strong>3️⃣ Emoção:</strong> “Conecte-se com o público e com os jurados. Obras que emocionam são memoráveis.”<br>
+                    <strong>4️⃣ Engajamento:</strong> “Compartilhe sua obra nas redes sociais e mobilize seus amigos para votarem em você!”
+                </blockquote>
+            </section>
+
+            <!-- ============================================================
+                 PARTE 3 – ADMINISTRADORES
+                 ============================================================ -->
+            <section class="section" id="part3">
+                <h1><span class="emoji">👑</span> Parte 3 – Para Administradores</h1>
+                <p>Esta seção é destinada aos administradores do sistema. Aqui você encontrará um guia completo para gerenciar o concurso, aprovar candidatos, confirmar votos, avaliar com IA e muito mais.</p>
+
+                <h2>🔐 Acesso ao Admin</h2>
+                <ol>
+                    <li><strong>Faça login</strong> com credenciais de administrador.</li>
+                    <li>O botão <strong>"👑 Admin"</strong> aparecerá no menu.</li>
+                    <li><strong>Clique para acessar</strong> o painel.</li>
+                </ol>
+
+                <h2 id="part3-conteudo">📝 Gerenciar Conteúdo do C3</h2>
+
+                <h3>➕ Adicionar Concurso (Portfólio)</h3>
+                <p><strong>Onde:</strong> Admin → Botão "➕ Concurso (Portfólio)"</p>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th>Campo</th><th>Tipo</th><th>Obrigatório</th></tr></thead>
+                        <tbody>
+                            <tr><td>Nome</td><td>Texto</td><td>✅ Sim</td></tr>
+                            <tr><td>Descrição</td><td>Texto</td><td>❌ Não</td></tr>
+                            <tr><td>Status</td><td>Seleção</td><td>✅ Sim</td></tr>
+                            <tr><td>Data Início</td><td>Data</td><td>❌ Não</td></tr>
+                            <tr><td>Data Fim</td><td>Data</td><td>❌ Não</td></tr>
+                            <tr><td>Imagem (URL)</td><td>URL</td><td>❌ Não</td></tr>
+                            <tr><td>Inscrições abertas</td><td>Sim/Não</td><td>❌ Não</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3>➕ Adicionar Notícia (Home)</h3>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th>Campo</th><th>Tipo</th><th>Obrigatório</th></tr></thead>
+                        <tbody>
+                            <tr><td>Título</td><td>Texto</td><td>✅ Sim</td></tr>
+                            <tr><td>Resumo</td><td>Texto</td><td>❌ Não</td></tr>
+                            <tr><td>Conteúdo (HTML)</td><td>HTML</td><td>❌ Não</td></tr>
+                            <tr><td>Data</td><td>Data</td><td>❌ Não</td></tr>
+                            <tr><td>Imagem (URL)</td><td>URL</td><td>❌ Não</td></tr>
+                            <tr><td>Destaque</td><td>Sim/Não</td><td>❌ Não</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h2 id="part3-candidatos">👥 Aprovar Candidatos</h2>
+                <p><strong>Local:</strong> Admin → Seção "Aprovar Candidatos"</p>
+                <ol>
+                    <li>Veja a lista de candidatos pendentes.</li>
+                    <li>Clique em <strong>"Aprovar"</strong> para aprovar.</li>
+                    <li>Clique em <strong>"Rejeitar"</strong> para rejeitar (informe o motivo).</li>
+                </ol>
+
+                <h2 id="part3-pagamentos">💰 Confirmar Pagamentos de Votos</h2>
+                <p><strong>Local:</strong> Admin → Seção "Confirmar Pagamentos de Votos"</p>
+                <ol>
+                    <li>Veja a lista de votos pendentes.</li>
+                    <li>Clique em <strong>"Confirmar"</strong> ao lado do voto.</li>
+                    <li>O voto será contabilizado para o candidato.</li>
+                </ol>
+
+                <h2 id="part3-juri">⭐ Notas do Júri</h2>
+                <p><strong>Local:</strong> Admin → Seção "Notas do Júri (Técnico)"</p>
+                <ol>
+                    <li>Veja a lista de candidatos aprovados.</li>
+                    <li>Digite a nota (0-10) no campo.</li>
+                    <li>Clique em <strong>"Salvar"</strong>.</li>
+                </ol>
+
+                <h2 id="part3-ia">🤖 Avaliação com IA</h2>
+                <p><strong>Local:</strong> Admin → Seção "🤖 Avaliação Automática com IA"</p>
+                <ol>
+                    <li>Candidatos aprovados aparecem na lista.</li>
+                    <li>Clique em <strong>"🤖 Avaliar"</strong> ao lado do candidato.</li>
+                    <li>O sistema consulta as 3 IAs em paralelo.</li>
+                    <li>Os resultados são exibidos no modal.</li>
+                    <li>A nota final é calculada e salva automaticamente.</li>
+                </ol>
+
+                <h2 id="part3-encerrar">🏁 Encerrar Edição</h2>
+                <p><strong>Local:</strong> Admin → Edições → Botão "🏁 Encerrar"</p>
+                <p><strong>Pré-requisitos:</strong></p>
+                <ul>
+                    <li>Todos os candidatos devem ter nota do júri.</li>
+                    <li>Deve haver pelo menos 1 voto computado.</li>
+                </ul>
+                <p><strong>Processo:</strong></p>
+                <ol>
+                    <li>Sistema calcula a nota final de cada candidato.</li>
+                    <li>Identifica o vencedor (maior nota final).</li>
+                    <li>Gera o relatório financeiro.</li>
+                    <li>Atualiza o status para "encerrada".</li>
+                    <li>Notifica o vencedor.</li>
+                </ol>
+
+                <h2 id="part3-backup">📦 Backup e Restauração</h2>
+                <h3>📤 Exportar Backup</h3>
+                <p>Clique em <strong>"📤 Exportar Backup"</strong> – o sistema baixa um arquivo <code>.json</code> com todos os dados.</p>
+                <h3>📥 Importar Merge</h3>
+                <p>Clique em <strong>"📥 Importar Merge"</strong> – selecione o arquivo <code>.json</code> do backup. O sistema importa apenas documentos que não existem (não sobrescreve dados existentes).</p>
+            </section>
+
+            <!-- ============================================================
+                 PARTE 4 – DESENVOLVEDORES
+                 ============================================================ -->
+            <section class="section" id="part4">
+                <h1><span class="emoji">💻</span> Parte 4 – Para Desenvolvedores e Colaboradores</h1>
+                <p>Esta seção é voltada para desenvolvedores, colaboradores e qualquer pessoa que queira entender a arquitetura do sistema, contribuir com código ou fazer deploy.</p>
+
+                <h2 id="part4-arquitetura">🏗️ Arquitetura do Sistema</h2>
+                <pre style="background:var(--gray-light);padding:16px;border-radius:var(--radius-sm);overflow-x:auto;font-size:0.85rem;border:1px solid var(--gray);">
+┌─────────────────────────────────────────────────────────────┐
+│                    SISTEMA C3 (Firebase)                    │
+├─────────────────────────────────────────────────────────────┤
+│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    │
+│  │   Frontend  │    │   Backend   │    │    APIs     │    │
+│  │   (HTML/JS) │    │  (Firebase) │    │   (IAs)     │    │
+│  └──────┬──────┘    └──────┬──────┘    └──────┬──────┘    │
+│         │                  │                  │            │
+│         ▼                  ▼                  ▼            │
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │              Firebase Firestore                      │  │
+│  │  • noticias, concursos, talentos, dicas             │  │
+│  │  • candidatos, votos, admin_logs                    │  │
+│  │  • config_ia, users                                 │  │
+│  └──────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────┘
+                </pre>
+
+                <h2 id="part4-firestore">🔥 Estrutura do Firestore</h2>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr><th>Coleção</th><th>Documento</th><th>Campos Principais</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td><code>noticias</code></td><td>(ID)</td><td>titulo, resumo, conteudo, data, imagem, destaque, createdAt</td></tr>
+                            <tr><td><code>concursos</code></td><td>(ID)</td><td>nome, descricao, status, dataInicio, dataFim, imagem, inscricoesAbertas</td></tr>
+                            <tr><td><code>talentos</code></td><td>(ID)</td><td>nome, bio, categoria, premio, foto, obra, instagram</td></tr>
+                            <tr><td><code>candidatos</code></td><td>(ID)</td><td>nome, cpf, titulo, link, whatsapp, foto, categoria, edicaoId, status, votos, notaJuri, avaliacaoIA</td></tr>
+                            <tr><td><code>config_ia</code></td><td><code>config</code></td><td>gemini, deepseek, qwen, pesos, criterios</td></tr>
+                            <tr><td><code>users</code></td><td>(UID)</td><td>displayName, email, role</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h2 id="part4-ia-integracao">🧠 Integração com IAs</h2>
+                <h3>Fluxo de Avaliação</h3>
+                <pre style="background:var(--gray-light);padding:16px;border-radius:var(--radius-sm);overflow-x:auto;font-size:0.85rem;border:1px solid var(--gray);">
+1. Admin clica em "Avaliar"
+         ↓
+2. Sistema busca candidato
+         ↓
+3. Sistema busca chaves da API (config_ia/config)
+         ↓
+4. Envia para Gemini (técnica/estética)
+   Envia para DeepSeek (criatividade)
+   Envia para Qwen (impacto cultural)
+         ↓
+5. IAs retornam notas e pareceres
+         ↓
+6. Sistema calcula nota final (ponderada)
+         ↓
+7. Sistema salva no Firestore
+         ↓
+8. Exibe resultado no modal
+                </pre>
+
+                <h3>Chaves de API</h3>
+                <p><strong>Local:</strong> Coleção <code>config_ia</code> → Documento <code>config</code></p>
+                <pre style="background:var(--gray-light);padding:16px;border-radius:var(--radius-sm);overflow-x:auto;font-size:0.85rem;border:1px solid var(--gray);">
+{
+  "gemini": {
+    "apiKey": "AIzaSy...",
+    "model": "gemini-1.5-pro",
+    "enabled": true
+  },
+  "deepseek": {
+    "apiKey": "sk-...",
+    "model": "deepseek-chat",
+    "enabled": true
+  },
+  "qwen": {
+    "apiKey": "sk-...",
+    "model": "qwen-plus",
+    "enabled": true
+  },
+  "pesos": {
+    "gemini": 40,
+    "deepseek": 30,
+    "qwen": 30
+  }
+}
+                </pre>
+
+                <h2 id="part4-funcoes">🔧 Funções Importantes</h2>
+                <h3>CRUD Genérico</h3>
+                <pre style="background:var(--gray-light);padding:16px;border-radius:var(--radius-sm);overflow-x:auto;font-size:0.85rem;border:1px solid var(--gray);">
+// Ler dados
+async function getData(col) {
+    const snap = await getDocs(collection(db, col));
+    return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+}
+
+// Adicionar dados
+async function addData(col, data) {
+    const ref = await addDoc(collection(db, col), {
+        ...data,
+        createdAt: Timestamp.now()
+    });
+    return ref.id;
+}
+                </pre>
+
+                <h3>Avaliação com IA</h3>
+                <pre style="background:var(--gray-light);padding:16px;border-radius:var(--radius-sm);overflow-x:auto;font-size:0.85rem;border:1px solid var(--gray);">
+async function avaliarCandidatoComIA(candidatoId) {
+    // 1. Buscar candidato
+    // 2. Buscar configurações das IAs
+    // 3. Verificar status
+    // 4. Atualizar para "processando"
+    // 5. Preparar obra
+    // 6. Executar avaliações em paralelo
+    // 7. Calcular nota final
+    // 8. Salvar no Firestore
+    // 9. Atualizar notaJuri
+    // 10. Registrar log
+}
+                </pre>
+
+                <h2 id="part4-debug">🐛 Debugging</h2>
+                <h3>Erros Comuns e Soluções</h3>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr><th>Erro</th><th>Causa</th><th>Solução</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td><code>Missing or insufficient permissions</code></td><td>Regras do Firestore bloqueando</td><td>Ajustar regras para <code>allow read, write: if true;</code></td></tr>
+                            <tr><td><code>currentUser is not defined</code></td><td><code>currentUser</code> não exportado</td><td>Adicionar <code>window.currentUser = currentUser</code></td></tr>
+                            <tr><td><code>Candidato não encontrado</code></td><td>Documento não existe</td><td>Criar documento na coleção <code>candidatos</code></td></tr>
+                            <tr><td><code>Resposta inválida do Gemini</code></td><td>Chave API incorreta</td><td>Verificar <code>config_ia/config</code></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h2 id="part4-deploy">🚀 Deploy</h2>
+                <h3>Checklist de Deploy</h3>
+                <ul>
+                    <li>[ ] Chaves API no <code>config_ia/config</code></li>
+                    <li>[ ] Regras do Firestore</li>
+                    <li>[ ] Autenticação do Firebase</li>
+                    <li>[ ] Usuário admin criado (<code>users/UID</code>)</li>
+                    <li>[ ] Edição ativa criada (<code>edicoesCulturais/ativa</code>)</li>
+                    <li>[ ] Dados iniciais (notícias, concursos)</li>
+                </ul>
+
+                <h2 id="part4-contribuir">📚 Como Contribuir</h2>
+                <ol>
+                    <li><strong>Fork</strong> do repositório.</li>
+                    <li><strong>Clone</strong> para sua máquina.</li>
+                    <li><strong>Crie uma branch</strong> para sua feature.</li>
+                    <li><strong>Implemente</strong> as alterações.</li>
+                    <li><strong>Teste</strong> localmente.</li>
+                    <li><strong>Envie</strong> um Pull Request.</li>
+                </ol>
+            </section>
+
+            <!-- ============================================================
+                 GLOSSÁRIO
+                 ============================================================ -->
+            <section class="section" id="glossario">
+                <h1><span class="emoji">📝</span> Glossário</h1>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr><th>Termo</th><th>Significado</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td><strong>C3</strong></td><td>Clube de Competições Culturais</td></tr>
+                            <tr><td><strong>Firestore</strong></td><td>Banco de dados NoSQL do Firebase</td></tr>
+                            <tr><td><strong>Firebase Auth</strong></td><td>Sistema de autenticação do Firebase</td></tr>
+                            <tr><td><strong>Gemini</strong></td><td>IA do Google para análises técnicas</td></tr>
+                            <tr><td><strong>DeepSeek</strong></td><td>IA para análises criativas</td></tr>
+                            <tr><td><strong>Qwen</strong></td><td>IA para análises culturais</td></tr>
+                            <tr><td><strong>PIX</strong></td><td>Sistema de pagamento instantâneo brasileiro</td></tr>
+                            <tr><td><strong>Lei 5.768/71</strong></td><td>Lei que regulamenta concursos culturais</td></tr>
+                            <tr><td><strong>Map</strong></td><td>Estrutura de dados do Firestore (objeto)</td></tr>
+                            <tr><td><strong>Timestamp</strong></td><td>Data e hora no Firestore</td></tr>
+                            <tr><td><strong>onSnapshot</strong></td><td>Listener em tempo real do Firestore</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- ============================================================
+         RODAPÉ
+         ============================================================ -->
+    <footer class="main-footer" id="contato">
+        <div class="container">
+            <div class="footer-col">
+                <h4>🎭 C3 · Agenda Cultural Pop's</h4>
+                <p>Concurso de Mérito · Clube de Competições<br>
+                © 2026 Carlos Alberto Reis</p>
+                <p style="margin-top:8px;">
+                    <strong>Chave PIX:</strong><br>
+                    <span class="pix-box" onclick="copiarPix()" title="Clique para copiar">61999487649</span>
+                    <span id="pixFeedback" style="font-size:0.75rem;color:var(--secondary);display:none;"> ✅ Copiado!</span>
+                </p>
+            </div>
+            <div class="footer-col">
+    <h4>📚 Links Rápidos</h4>
+    <p><a href="#part1">🎭 Parte 1 – Público</a></p>
+    <p><a href="#part2">📝 Parte 2 – Participantes</a></p>
+    <p><a href="#part3">👑 Parte 3 – Admin</a></p>
+    <p><a href="#part4">💻 Parte 4 – Desenvolvedores</a></p>
+    <p><a href="#glossario">📝 Glossário</a></p>
+    <p style="margin-top:12px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.1);">
+        <a href="index.html" style="background:var(--secondary); color:#1a2e1a; padding:10px 20px; border-radius:50px; font-weight:800; text-decoration:none; display:inline-block; transition:0.3s;">
+            🎯 Acessar o C3
+        </a>
+    </p>
+</div>
+            <div class="footer-col">
+                <h4>📞 Suporte</h4>
+                <p>📧 <a href="mailto:carlos@c3cultural.com.br">carlos@c3cultural.com.br</a></p>
+                <p>📱 <a href="https://wa.me/556199987649">(61) 99999-87649</a></p>
+                <p>📷 <a href="#">@c3cultural</a></p>
+            </div>
+            <div class="footer-bottom">
+                <p>Concurso Cultural Lei 5.768/71 · Vedado Sorteio · Todos os direitos reservados.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ============================================================
+         SCRIPT
+         ============================================================ -->
+    <script>
+        // ============================================================
+        // MENU MOBILE
+        // ============================================================
+        const menuToggle = document.getElementById('menuToggle');
+        const sidebar = document.getElementById('sidebar');
+        const closeSide = document.getElementById('closeSide');
+
+        function toggleSidebar() {
+            sidebar.classList.toggle('open');
+        }
+
+        menuToggle.addEventListener('click', toggleSidebar);
+        closeSide.addEventListener('click', toggleSidebar);
+
+        // Fechar ao clicar em um link
+        document.querySelectorAll('.sidebar a').forEach(link => {
+            link.addEventListener('click', () => {
+                if (window.innerWidth <= 768) {
+                    sidebar.classList.remove('open');
+                }
+            });
+        });
+
+        // ============================================================
+        // DESTAQUE DO LINK ATIVO NO SIDEBAR
+        // ============================================================
+        const links = document.querySelectorAll('.sidebar a');
+        const sections = document.querySelectorAll('.section');
+
+        function updateActiveLink() {
+            let current = '';
+            sections.forEach(section => {
+                const rect = section.getBoundingClientRect();
+                if (rect.top <= 120) {
+                    current = section.id;
+                }
+            });
+            links.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href') === '#' + current) {
+                    link.classList.add('active');
+                }
+            });
+        }
+
+        window.addEventListener('scroll', updateActiveLink);
+        window.addEventListener('load', updateActiveLink);
+
+        // ============================================================
+        // COPIAR CHAVE PIX
+        // ============================================================
+        function copiarPix() {
+            const pix = '61999487649';
+            const feedback = document.getElementById('pixFeedback');
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(pix).then(() => {
+                    feedback.style.display = 'inline';
+                    setTimeout(() => { feedback.style.display = 'none'; }, 2000);
+                });
+            } else {
+                // Fallback
+                const input = document.createElement('input');
+                input.value = pix;
+                document.body.appendChild(input);
+                input.select();
+                document.execCommand('copy');
+                document.body.removeChild(input);
+                feedback.style.display = 'inline';
+                setTimeout(() => { feedback.style.display = 'none'; }, 2000);
+            }
+        }
+    </script>
+
+</body>
+</html>
